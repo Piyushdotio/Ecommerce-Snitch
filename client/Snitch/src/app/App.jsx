@@ -1,10 +1,14 @@
 import React from 'react'
 import './app.css'
+import { RouterProvider } from 'react-router-dom'
+import { router } from './app.route'
+
 const App = () => {
   return (
-    <div className='bg-indigo-500'>
-      Home
-    </div>
+    
+    <RouterProvider router={router}/>
+
+  
   )
 }
 
