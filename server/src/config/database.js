@@ -6,6 +6,9 @@ function connectTodb(){
     .then(()=>{
         console.log("connected to db")
     })
+    .catch((err)=>{
+        console.error("database connection failed", err.message)
+    })
 }
 
  export default connectTodb

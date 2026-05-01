@@ -27,189 +27,91 @@ const AppleIcon = () => (
   </svg>
 );
 
-/* ─── Role Toggle ─── */
-function RoleToggle({ role, setRole }) {
-  return (
-    <div
-      className="relative flex p-1 rounded-full border border-white/10 overflow-hidden mx-auto"
-      style={{ background: 'rgba(255,255,255,0.04)', width: 'fit-content', minWidth: 200 }}
-    >
-      <div
-        className="absolute top-1 left-1 bottom-1 rounded-full transition-all duration-500"
-        style={{
-          width: 'calc(50% - 4px)',
-          background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-          boxShadow: '0 4px 16px rgba(245,158,11,0.35)',
-          transform: `translateX(${role === 'seller' ? '100%' : '0%'})`,
-        }}
-      />
-      {['user', 'seller'].map((r) => (
-        <button
-          key={r}
-          type="button"
-          onClick={() => setRole(r)}
-          style={{
-            position: 'relative', zIndex: 10,
-            flex: '0 0 100px', padding: '8px 0',
-            fontSize: 10, fontWeight: 900, letterSpacing: '0.22em',
-            textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer',
-            color: role === r ? '#000' : 'rgba(255,255,255,0.35)',
-            transition: 'color 0.4s', fontFamily: "'Inter', sans-serif",
-          }}
-        >
-          {r}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Input Field — controlled via value/onChange props ─── */
+/* ─── Input Field — controlled ─── */
 function InputField({ id, label, type = 'text', name, suffix, value, onChange }) {
   const [focused, setFocused] = useState(false);
   const hasValue = value.length > 0;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label
-        htmlFor={id}
-        style={{
-          fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase',
-          color: focused ? '#F59E0B' : hasValue ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)',
-          transition: 'color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          fontFamily: "'Inter', sans-serif", marginLeft: 4,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          display: 'flex', alignItems: 'center',
-          border: `1px solid ${focused ? 'rgba(245,158,11,0.55)' : 'rgba(255,255,255,0.14)'}`,
-          borderRadius: 14,
-          background: focused ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
-          padding: '0 18px', height: 52,
-          transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-          boxShadow: focused
-            ? '0 0 0 2px rgba(245,158,11,0.18), 0 6px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.12)',
-        }}
-      >
+      <label htmlFor={id} style={{
+        fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase',
+        color: focused ? '#F59E0B' : hasValue ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)',
+        transition: 'color 0.3s cubic-bezier(0.4, 0, 0.2, 1)', fontFamily: "'Inter', sans-serif", marginLeft: 4,
+      }}>{label}</label>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        border: `1px solid ${focused ? 'rgba(245,158,11,0.55)' : 'rgba(255,255,255,0.14)'}`,
+        borderRadius: 14, background: focused ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
+        backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        padding: '0 18px', height: 52, transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        boxShadow: focused
+          ? '0 0 0 2px rgba(245,158,11,0.18), 0 6px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.12)',
+      }}>
         {suffix && (
-          <span style={{
-            color: focused || hasValue ? '#F59E0B' : 'rgba(255,255,255,0.25)',
-            fontSize: 15, fontWeight: 700, paddingRight: 14, marginRight: 14,
-            borderRight: '1px solid rgba(255,255,255,0.08)', transition: 'color 0.3s',
-            flexShrink: 0, fontFamily: "'Inter', sans-serif",
-          }}>
-            {suffix}
-          </span>
+          <span style={{ color: focused || hasValue ? '#F59E0B' : 'rgba(255,255,255,0.25)', fontSize: 15, fontWeight: 700, paddingRight: 14, marginRight: 14, borderRight: '1px solid rgba(255,255,255,0.08)', transition: 'color 0.3s', flexShrink: 0, fontFamily: "'Inter', sans-serif" }}>{suffix}</span>
         )}
         <input
           id={id} type={type} name={name}
-          value={value}
-          onChange={onChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          value={value} onChange={onChange}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
           autoComplete="off" placeholder=""
-          style={{
-            flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            color: '#fff', fontSize: 14, fontFamily: "'Inter', sans-serif",
-            caretColor: '#F59E0B', fontWeight: 500,
-          }}
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14, fontFamily: "'Inter', sans-serif", caretColor: '#F59E0B', fontWeight: 500 }}
         />
       </div>
     </div>
   );
 }
 
-/* ─── Password Input — controlled via value/onChange props ─── */
+/* ─── Password Input — controlled ─── */
 function PasswordInput({ id, label, name, value, onChange }) {
   const [focused, setFocused] = useState(false);
   const [show, setShow] = useState(false);
   const hasValue = value.length > 0;
 
-  const strength = [value.length >= 8, /[A-Z]/.test(value), /[0-9]/.test(value), /[^A-Za-z0-9]/.test(value)].filter(Boolean).length;
-  const strengthColor = ['', '#EF4444', '#F59E0B', '#10B981', '#10B981'][strength] || '';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label
-        htmlFor={id}
-        style={{
-          fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase',
-          color: focused ? '#F59E0B' : hasValue ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)',
-          transition: 'color 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          fontFamily: "'Inter', sans-serif", marginLeft: 4,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', position: 'relative',
-          border: `1px solid ${focused ? 'rgba(245,158,11,0.55)' : 'rgba(255,255,255,0.14)'}`,
-          borderRadius: 14,
-          background: focused ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
-          padding: '0 18px', height: 52,
-          transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-          boxShadow: focused
-            ? '0 0 0 2px rgba(245,158,11,0.18), 0 6px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.12)',
-        }}
-      >
+      <label htmlFor={id} style={{
+        fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase',
+        color: focused ? '#F59E0B' : hasValue ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)',
+        transition: 'color 0.3s cubic-bezier(0.4, 0, 0.2, 1)', fontFamily: "'Inter', sans-serif", marginLeft: 4,
+      }}>{label}</label>
+      <div style={{
+        display: 'flex', alignItems: 'center', position: 'relative',
+        border: `1px solid ${focused ? 'rgba(245,158,11,0.55)' : 'rgba(255,255,255,0.14)'}`,
+        borderRadius: 14, background: focused ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)',
+        backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+        padding: '0 18px', height: 52, transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        boxShadow: focused
+          ? '0 0 0 2px rgba(245,158,11,0.18), 0 6px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 8px rgba(0,0,0,0.12)',
+      }}>
         <input
           id={id} type={show ? 'text' : 'password'} name={name}
-          value={value}
-          onChange={onChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          autoComplete="new-password"
-          style={{
-            flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            color: '#fff', fontSize: 14, fontFamily: "'Inter', sans-serif",
-            caretColor: '#F59E0B', paddingRight: 36, fontWeight: 500,
-          }}
+          value={value} onChange={onChange}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+          autoComplete="current-password"
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14, fontFamily: "'Inter', sans-serif", caretColor: '#F59E0B', paddingRight: 36, fontWeight: 500 }}
         />
-        <button
-          type="button" onClick={() => setShow(s => !s)}
-          style={{
-            position: 'absolute', right: 18, background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, color: 'rgba(255,255,255,0.2)',
-            display: 'flex', alignItems: 'center', transition: 'all 0.3s ease',
-          }}
+        <button type="button" onClick={() => setShow(s => !s)}
+          style={{ position: 'absolute', right: 18, background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', transition: 'all 0.3s ease' }}
           onMouseEnter={e => e.currentTarget.style.color = '#F59E0B'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
         >
           {show ? <EyeOpenIcon /> : <EyeOffIcon />}
         </button>
       </div>
-      {hasValue && (
-        <div style={{ display: 'flex', gap: 4, padding: '0 8px' }}>
-          {[1,2,3,4].map(i => (
-            <div key={i} style={{
-              height: 2, flex: 1, borderRadius: 4,
-              background: i <= strength ? strengthColor : 'rgba(255,255,255,0.06)',
-              transition: 'background 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            }} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
 /* ─── Main Component ─── */
-export default function Register() {
-  const { handleRegister } = useAuth();
+export default function Login() {
+  const { handleLogin } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState('user');
   const [mounted, setMounted] = useState(false);
-  const [formData, setFormData] = useState({
-    fullname: '', email: '', contact: '', password: '',
-  });
+  const [formData, setFormData] = useState({ emailOrPhone: '', password: '' });
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
@@ -220,27 +122,22 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = await handleRegister({
-      fullname: formData.fullname,
-      email: formData.email,
-      contact: formData.contact,
+    const isEmail = formData.emailOrPhone.includes('@');
+    const data = await handleLogin({
+      email: isEmail ? formData.emailOrPhone : undefined,
+      contact: !isEmail ? formData.emailOrPhone : undefined,
       password: formData.password,
-      isSeller: role === 'seller',
     });
 
     if (data?.success) {
-      navigate('/login');
+      navigate('/');
     }
   };
 
   return (
     <div style={{ width: '100vw', height: '100dvh', position: 'relative', overflow: 'hidden', fontFamily: "'Inter', sans-serif" }}>
       {/* BACKGROUND */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'scale(1.04)',
-        transition: 'opacity 0.9s ease, transform 1.2s ease', zIndex: 0,
-      }}>
+      <div style={{ position: 'absolute', inset: 0, opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'scale(1.04)', transition: 'opacity 0.9s ease, transform 1.2s ease', zIndex: 0 }}>
         <img src="/fashion-hero.png" alt="Snitch Fashion" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.1) 0%, transparent 55%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 40%)' }} />
@@ -249,23 +146,16 @@ export default function Register() {
 
       {/* LEFT — hero text */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 5, pointerEvents: 'none' }}>
-        <div style={{
-          position: 'absolute', top: 36, left: 44, display: 'flex', alignItems: 'center', gap: 10,
-          opacity: mounted ? 1 : 0, transition: 'opacity 0.8s ease 0.4s', pointerEvents: 'auto',
-        }}>
+        <div style={{ position: 'absolute', top: 36, left: 44, display: 'flex', alignItems: 'center', gap: 10, opacity: mounted ? 1 : 0, transition: 'opacity 0.8s ease 0.4s', pointerEvents: 'auto' }}>
           <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 30, color: '#fff', letterSpacing: '0.06em' }}>Snitch</span>
         </div>
-        <div style={{
-          position: 'absolute', bottom: 52, left: 44,
-          opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)',
-          transition: 'all 0.8s ease 0.5s', maxWidth: 380,
-        }}>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#F59E0B', marginBottom: 14, opacity: 0.9 }}>── New Season Onboarding</p>
+        <div style={{ position: 'absolute', bottom: 52, left: 44, opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'all 0.8s ease 0.5s', maxWidth: 380 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#F59E0B', marginBottom: 14, opacity: 0.9 }}>── Welcome Back</p>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 800, fontSize: 'clamp(2.8rem, 4.5vw, 3.8rem)', lineHeight: 1.0, color: '#fff', margin: 0, marginBottom: 18, textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
-            Join the<br /><em style={{ color: '#F59E0B', fontStyle: 'italic' }}>Elite Circle</em>
+            Sign In to<br /><em style={{ color: '#F59E0B', fontStyle: 'italic' }}>Your Circle</em>
           </h1>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, maxWidth: 320, marginBottom: 28 }}>
-            Curated luxury drops and private collections for the next generation of style.
+            Access your exclusive drops, orders, and members-only perks.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {['Exclusive Early Access', 'Priority Delivery', 'Members-Only Pricing'].map(item => (
@@ -296,35 +186,37 @@ export default function Register() {
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}>×</Link>
 
-        <div style={{ marginBottom: 28 }}>
-          <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.35em', textTransform: 'uppercase', color: '#F59E0B', marginBottom: 10, opacity: 0.85 }}>Onboarding</p>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 6, letterSpacing: '-0.02em', lineHeight: 1.2, textShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Create Account</h2>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' }}>Join thousands of sellers & buyers today</p>
-        </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <RoleToggle role={role} setRole={setRole} />
+        <div style={{ marginBottom: 36 }}>
+          <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.35em', textTransform: 'uppercase', color: '#F59E0B', marginBottom: 10, opacity: 0.85 }}>Sign In</p>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 6, letterSpacing: '-0.02em', lineHeight: 1.2, textShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Welcome Back</h2>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' }}>Log in to your Snitch account</p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <InputField id="name" label="Full Name" name="fullname" value={formData.fullname} onChange={handleChange} />
-          <InputField id="email" label="Email Address" type="email" name="email" value={formData.email} onChange={handleChange} />
-          <InputField id="phone" label="Contact Number" name="contact" suffix="+91" value={formData.contact} onChange={handleChange} />
+          <InputField id="emailOrPhone" label="Email / Contact Number" type="text" name="emailOrPhone" value={formData.emailOrPhone} onChange={handleChange} />
           <PasswordInput id="password" label="Password" name="password" value={formData.password} onChange={handleChange} />
 
+          <div style={{ textAlign: 'right', marginTop: -10 }}>
+            <Link to="/forgot-password" style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', textDecoration: 'none', letterSpacing: '0.04em', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#F59E0B'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>
+              Forgot password?
+            </Link>
+          </div>
+
           <button
-            id="create-account-btn" type="submit"
+            id="login-btn" type="submit"
             style={{ marginTop: 6, width: '100%', padding: '15px 0', border: 'none', borderRadius: 100, background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#000', fontSize: 11, fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: '0 8px 32px rgba(245,158,11,0.3)', transition: 'all 0.25s ease', fontFamily: "'Inter', sans-serif" }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(245,158,11,0.45)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(245,158,11,0.3)'; }}
             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; }}
             onMouseUp={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-          >Create Account</button>
+          >Sign In</button>
         </form>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '20px 0' }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>Or signup with</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>Or login with</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
         </div>
 
@@ -339,8 +231,8 @@ export default function Register() {
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-          Already have an account?{' '}
-          <Link to="/login" style={{ color: '#F59E0B', fontWeight: 700, textDecoration: 'none', letterSpacing: '0.03em', borderBottom: '1px solid rgba(245,158,11,0.4)', paddingBottom: 1, transition: 'color 0.2s' }}>Log in</Link>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: '#F59E0B', fontWeight: 700, textDecoration: 'none', letterSpacing: '0.03em', borderBottom: '1px solid rgba(245,158,11,0.4)', paddingBottom: 1, transition: 'color 0.2s' }}>Register</Link>
         </p>
       </div>
     </div>

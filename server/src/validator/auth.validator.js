@@ -24,9 +24,21 @@ export const validateRegisterUser=[
     .isLength({min:6}).withMessage("password must be atleast 6 digit"),
     body("fullname")
     .notEmpty().withMessage("fullname must be required")
-    .length({min:3}).withMessage("fullname must contain 3 letter"),
+    .isLength({min:3}).withMessage("fullname must contain 3 letter"),
     body("isSeller")
     .isBoolean().withMessage("isSeller must be a boolean value"),
     
+    validateRequest
+]
+
+export const validateLoginUser=[
+    body("password")
+    .isLength({min:6}).withMessage("password must be atleast 6 digit"),
+    body("email")
+    .optional()
+    .isEmail().withMessage("Invalid Email Format"),
+    body("contact")
+    .optional()
+    .matches(/^\d{10}$/).withMessage("Contact must be 10-digits"),
     validateRequest
 ]
