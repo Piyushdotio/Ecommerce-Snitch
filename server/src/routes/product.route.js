@@ -6,6 +6,7 @@ import {
   uploadproductController,
   getsellerproductsController,
   getallproducts,
+  getProductDetails
 } from "../controller/product.controller.js";
 
 const upload = multer({
@@ -65,5 +66,7 @@ productRouter.get("/showproduct", verifySeller, getsellerproductsController);
  * @access  public
  */
 productRouter.get("/",getallproducts)
+
+productRouter.get("/detail/:id",getProductDetails)
 
 export default productRouter;

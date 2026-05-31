@@ -1,13 +1,13 @@
 /* Home.scss - E-commerce Styles */
 
 // Colors Variable Definitions
-$background: #131313;
-$on-background: #e5e2e1;
-$surface-container-low: #1c1b1b;
-$surface-container-lowest: #0e0e0e;
-$on-surface: #e5e2e1;
-$on-surface-variant: #cfc4c5;
-$outline-variant: #4c4546;
+$background: var(--theme-bg);
+$on-background: var(--theme-text);
+$surface-container-low: var(--theme-panel);
+$surface-container-lowest: var(--theme-panel-lowest);
+$on-surface: var(--theme-text);
+$on-surface-variant: var(--theme-text-muted);
+$outline-variant: var(--theme-border);
 $tertiary: #ff6b00;
 $tertiary-fixed-dim: #ff6b00;
 $on-tertiary-container: #ff6b00;
@@ -23,6 +23,32 @@ $font-display: "Sora", sans-serif;
 
 // Base reset to contain page theme
 .home-page-container {
+  // Theme Variables
+  --theme-bg: #131313;
+  --theme-text: #e5e2e1;
+  --theme-text-muted: #cfc4c5;
+  --theme-panel: #1c1b1b;
+  --theme-panel-lowest: #0e0e0e;
+  --theme-border: rgba(76, 69, 70, 0.4);
+  --theme-border-light: rgba(229, 226, 225, 0.15);
+  --theme-shadow: rgba(0, 0, 0, 0.35);
+  --theme-header-bg: rgba(19, 19, 19, 0.95);
+
+  &[data-theme="light"] {
+    --theme-bg: #ffffff;
+    --theme-text: #333333;
+    --theme-text-muted: #666666;
+    --theme-panel: #f5f5f5;
+    --theme-panel-lowest: #eaeaea;
+    --theme-border: rgba(200, 200, 200, 0.6);
+    --theme-border-light: rgba(0, 0, 0, 0.08);
+    --theme-shadow: rgba(0, 0, 0, 0.06);
+    --theme-header-bg: rgba(255, 255, 255, 0.95);
+  }
+
+  // Smooth theme transition
+  transition: background-color 0.3s ease, color 0.3s ease;
+
   min-height: 100vh;
   background-color: $background;
   color: $on-background;
@@ -35,6 +61,7 @@ $font-display: "Sora", sans-serif;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.15s ease;
   }
 
   ::selection {
@@ -59,8 +86,9 @@ $font-display: "Sora", sans-serif;
   width: 100%;
   height: 72px;
   z-index: 50;
-  background-color: $background;
-  border-bottom: 1px solid rgba(229, 226, 225, 0.15);
+  background-color: var(--theme-header-bg);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--theme-border-light);
   display: flex;
   align-items: center;
 
@@ -169,6 +197,15 @@ $font-display: "Sora", sans-serif;
         opacity: 0.8;
       }
 
+      &.theme-toggle-btn {
+        font-size: 20px;
+        color: inherit;
+        
+        i {
+          display: block;
+        }
+      }
+
       &.cart-button {
         position: relative;
       }
@@ -271,9 +308,9 @@ $font-display: "Sora", sans-serif;
   position: sticky;
   top: 72px;
   z-index: 45;
-  background-color: $background;
-  border-top: 1px solid rgba(229, 226, 225, 0.15);
-  border-bottom: 1px solid rgba(229, 226, 225, 0.15);
+  background-color: var(--theme-bg);
+  border-top: 1px solid var(--theme-border-light);
+  border-bottom: 1px solid var(--theme-border-light);
   padding: 24px 0;
 
   @media (min-width: 1024px) {
@@ -332,7 +369,8 @@ $font-display: "Sora", sans-serif;
     color: $on-background;
 
     &::placeholder {
-      color: rgba(207, 196, 197, 0.4);
+      color: var(--theme-text-muted);
+      opacity: 0.4;
     }
   }
 
@@ -875,7 +913,8 @@ $font-display: "Sora", sans-serif;
     padding: 6px 0;
 
     &::placeholder {
-      color: rgba(229, 226, 225, 0.15);
+      color: var(--theme-text-muted);
+      opacity: 0.4;
     }
   }
 

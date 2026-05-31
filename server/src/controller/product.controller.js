@@ -2,64 +2,79 @@ import productModel from "../models/product.model.js";
 import { fileupload } from "../services/storage.service.js";
 
 export const uploadproductController = async (req, res) => {
-    const { title, description, priceAmount, priceCurrency } = req.body;
-    const seller = req.user;
-    const files = req.files || [];
+  const { title, description, priceAmount, priceCurrency } = req.body;
+  const seller = req.user;
+  const files = req.files || [];
 
-    const uploadedImages = await Promise.all(
-        files.map(async (file) => {
-            const uploadedFile = await fileupload({
-                buffer: file.buffer,
-                fileName: file.originalname,
-            });
+  const uploadedImages = await Promise.all(
+    files.map(async (file) => {
+      const uploadedFile = await fileupload({
+        buffer: file.buffer,
+        fileName: file.originalname,
+      });
 
-            return {
-                url: uploadedFile.url,
-                alt: title,
-            };
-        })
-    );
+      return {
+        url: uploadedFile.url,
+        alt: title,
+      };
+    }),
+  );
 
-    const product = await productModel.create({
-        title,
-        description,
-        price: {
-            amount: Number(priceAmount),
-            currency: priceCurrency || "INR",
-        },
-        images: uploadedImages,
-        seller: seller._id,
-    });
+  const product = await productModel.create({
+    title,
+    description,
+    price: {
+      amount: Number(priceAmount),
+      currency: priceCurrency || "INR",
+    },
+    images: uploadedImages,
+    seller: seller._id,
+  });
 
-    res.status(201).json({
-        message: "product created successfully",
-        success: true,
-        product,
-    });
+  res.status(201).json({
+    message: "product created successfully",
+    success: true,
+    product,
+  });
 };
 
-export const getsellerproductsController=async(req,res)=>{
-    const seller=req.user
-    const products=await productModel.find({seller:seller._id})
-    if(!products){
-        return res.status(404).json({
-            message:"products not found"
-        })
-    }
-    return res.status(200).json({
-        message:"product fetched successfully",
-        success:true,
-        products
-    })
-}
+export const getsellerproductsController = async (req, res) => {
+  const seller = req.user;
+  const products = await productModel.find({ seller: seller._id });
+  if (!products) {
+    return res.status(404).json({
+      message: "products not found",
+    });
+  }
+  return res.status(200).json({
+    message: "product fetched successfully",
+    success: true,
+    products,
+  });
+};
 
-export const getallproducts=async(req,res)=>{
-    const  products=await productModel.find()
+export const getallproducts = async (req, res) => {
+  const products = await productModel.find();
 
-    return res.status(200).json({
-        message:"products fetched successfully",
-        success:true,
-        products
+  return res.status(200).json({
+    message: "products fetched successfully",
+    success: true,
+    products,
+  });
+};
 
-    })
-}
+export const getProductDetails = async (req, res) => {
+  const { id } = req.params;
+  const product = await productModel.findById(id);
+  if (!product) {
+    return res.status(404).json({
+      message: "Product not Found",
+      success: false,
+    });
+  }
+  return res.status(200).json({
+    message: "Product fetched successfully",
+    success: true,
+    product,
+  });
+};

@@ -1,91 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useProduct } from '../hook/useProduct';
-import { Link } from 'react-router-dom';
-import './Home.scss';
-
-const sampleProducts = [
-  {
-    _id: "69f444dd39d4ac4b32b542ee",
-    title: "newlaptop",
-    description: "Goodproduct - high performance minimalist design",
-    images: [
-      {
-        url: "https://ik.imagekit.io/rhxq2hk1a/Snitch/ChatGPT_Image_Apr_8__2026__04_58_52_PM_XcXdW7_x5.png",
-        alt: "newlaptop"
-      }
-    ],
-    price: {
-      amount: 55000,
-      currency: "INR"
-    },
-    category: "Laptops"
-  },
-  {
-    _id: "sample-1",
-    title: "Architect Blazer",
-    description: "Double-breasted wool blend oversized silhouette",
-    images: [
-      {
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuCK8scQpBiO7tXpFVH-8OH4sDBOOok_LJaTWRPwtVdchag5vOBCcbh-HQMU8E3nj109sncVAPA5CpRldFVTDzJlc1jVHkrCfJs7p1uZ7ZgGKdBT38G1sgMaBEZCwr4golCzoQ40ajelLZUaQ4jKvEIRSjIB7NSfAdq_TYE5RB1Botwz-t-hj_DVGwSM4-KpLDKpjankgCJsmAqYILl4PPQ-kpDtCHc4wRgb7go6_vGgwpccUOTZDxmglXK1BzA5gYceSMnVUYuObnI",
-        alt: "Architect Blazer"
-      }
-    ],
-    price: {
-      amount: 8999,
-      currency: "INR"
-    },
-    category: "Outerwear"
-  },
-  {
-    _id: "sample-2",
-    title: "Tapered Trousers",
-    description: "Technical stretch fabric with precise pleats",
-    images: [
-      {
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuAj0BPYcFusOLR0g5kOA65GX_w6CNhqOjsTPz69MqClEQgrNWxKXNyU7jj2_ejhRC5LJjULNFZiy5JTvyvG6gs-0C3ybQKvivZOsTM8nVQ3vSPIp6G999jamrS54RtMEZUjPlZTSG0dCyzIT1iu_Kj1QfnufVXQ6wnGkxN8WVv-qfkOoy_eAgVytFGR3e1NpFH68bbxlNe2-zOv7P4BB1z-TKpW-LepVAYxOGlC3XO49A6_Ya5f9XBbnVELgpGc8xME9Ifaf_RFtdM",
-        alt: "Tapered Trousers"
-      }
-    ],
-    price: {
-      amount: 4499,
-      currency: "INR"
-    },
-    category: "Denim"
-  },
-  {
-    _id: "sample-3",
-    title: "Noir Core Tee",
-    description: "280 GSM Heavyweight Cotton oversized fit",
-    images: [
-      {
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDMrV-9nTuhm7LyMjccLFWEobe56IwEXjFMO1KiaSqPEhsMz3aVpaX2ryULo2b3XosToaz3xOffMY-CwC5xN6XSk0FakbUfXHH8jSzNYAhIZBVYW6InwlTKLNdSvY3Kbp2G5sMB6fhWePlpAf-XHLvwNVy3a92_JnuFYyoN2gahc7uMpvJEiTbrpAKWUxSplAyhBf2jFoqJrPVUhMCP2UXl_ZgolX-i-YTU73uIbmh6j5ofAK_whkqLxwJxk5jqEtvUKud-HPgGaoI",
-        alt: "Noir Core Tee"
-      }
-    ],
-    price: {
-      amount: 2299,
-      currency: "INR"
-    },
-    category: "Essential Tees"
-  },
-  {
-    _id: "sample-4",
-    title: "Velocity Runner",
-    description: "Premium Nappa Leather custom running sole",
-    images: [
-      {
-        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuC51zrfX8MDIZnvG7GFS_Fc_-f6EPWdOcUxK2U_JDZZum7TIlY9PnmltNLqHJzmUHBbjIic1usmmpZ2b2S1IbV1MsCl9RrMlvRTJxP25kiDyuW9tXHXPRB2tUsjhcx8i7jR-76mtJkg1PVe83kuK3KGzD8uAaOaEpl4fzFz_R1OvfPz90QK9lIsBbaYvxLRiuqEl8sHJlZXwaMNvB344GLAXvy6fNL5rEU7rDy3avXnnCr-RvzvG-TT_b6075Qq83EIXWZu_NvXQyI",
-        alt: "Velocity Runner"
-      }
-    ],
-    price: {
-      amount: 7499,
-      currency: "INR"
-    },
-    category: "Footwear"
-  }
-];
+import { Link,useNavigate } from 'react-router-dom';
+import '../pages/style/Home.scss';
 
 const getCategory = (product) => {
   if (product.category) return product.category;
@@ -113,7 +30,13 @@ const formatPrice = (amount, currency) => {
 const Home = () => {
   const products = useSelector((state) => state.product.products);
   const { handleallproducts } = useProduct();
-
+  const navigate=useNavigate()
+  
+  // Theme state persisted in localStorage
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || "dark";
+  });
+  
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -121,26 +44,21 @@ const Home = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  useEffect(() => {
     handleallproducts();
   }, [handleallproducts]);
 
-  // Combine database products with sample products to ensure there is rich data
-  const combinedProducts = [];
   const dbProducts = Array.isArray(products) ? products : [];
-  
-  // To avoid duplicates, check if a product with the same _id already exists
-  dbProducts.forEach(p => {
-    combinedProducts.push(p);
-  });
-  
-  sampleProducts.forEach(sp => {
-    if (!combinedProducts.some(p => p._id === sp._id || p.title.toLowerCase() === sp.title.toLowerCase())) {
-      combinedProducts.push(sp);
-    }
-  });
 
   // Filter products by category and search query
-  const filteredProducts = combinedProducts.filter((product) => {
+  const filteredProducts = dbProducts.filter((product) => {
     const matchesCategory =
       selectedCategory === "All" ||
       getCategory(product).toLowerCase() === selectedCategory.toLowerCase();
@@ -160,7 +78,7 @@ const Home = () => {
   };
 
   return (
-    <div className="home-page-container">
+    <div className="home-page-container" data-theme={theme}>
       {/* Header */}
       <header className="home-header">
         <div className="header-content-wrapper">
@@ -178,6 +96,10 @@ const Home = () => {
           </div>
           <div className="header-right">
             <div className="desktop-actions">
+              {/* Theme Toggle Button */}
+              <button onClick={toggleTheme} className="action-icon-link theme-toggle-btn" title="Toggle Light/Dark Mode">
+                <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"}></i>
+              </button>
               <a href="#shop" className="action-icon-link">
                 <span className="material-symbols-outlined">search</span>
               </a>
@@ -203,6 +125,11 @@ const Home = () => {
             <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Seller Dashboard</Link>
             <div className="divider"></div>
             <div className="mobile-actions">
+              {/* Theme Toggle in Mobile Nav */}
+              <button onClick={() => { toggleTheme(); setMobileMenuOpen(false); }} className="mobile-action-item theme-toggle-btn">
+                <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"}></i>
+                <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </button>
               <button onClick={() => { setMobileMenuOpen(false); alert("Cart panel coming soon!"); }} className="mobile-action-item">
                 <span className="material-symbols-outlined">shopping_cart</span>
                 <span>Cart ({cartCount})</span>
@@ -267,7 +194,9 @@ const Home = () => {
                 const cat = getCategory(product);
 
                 return (
-                  <div key={product._id} className="product-item-card">
+                  <div 
+                    onClick={()=>navigate(`product/${product._id}`)}
+                  key={product._id} className="product-item-card">
                     <div className="product-image-container">
                       <img 
                         className="product-card-img" 

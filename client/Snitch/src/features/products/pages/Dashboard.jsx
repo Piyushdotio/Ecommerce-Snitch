@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useProduct } from "../hook/useProduct";
 import { useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
-import "./dashboard.scss";
+import "../pages/style/dashboard.scss";
 
 /* ─── SVG Icons ─── */
 const GridIcon = () => (
@@ -26,7 +26,7 @@ const ListIcon = () => (
 );
 
 const SearchIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
@@ -63,12 +63,18 @@ const Dashboard = () => {
   // Local state for interactive features
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStoreOnline, setIsStoreOnline] = useState(true);
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || "dark";
+  });
   const [viewType, setViewType] = useState("grid"); // grid | list
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // newest | price-asc | price-desc | name-asc | name-desc
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [deletedProductIds, setDeletedProductIds] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const loadSellerProducts = async () => {
@@ -240,8 +246,9 @@ const Dashboard = () => {
       <main className="main-content">
         <section className="header-section">
           <div className="title-area">
+            <span className="section-kicker">Seller Workspace</span>
             <h1>Product Dashboard</h1>
-            <p>Monitor metrics and manage your modern Snitch catalog.</p>
+            <p>Track inventory, review pricing, and keep your SNITCH catalog polished.</p>
           </div>
           <div className="header-actions">
             <Link to="/seller/create-product" className="add-product-btn">
@@ -265,7 +272,7 @@ const Dashboard = () => {
           <div className="stat-card">
             <div>
               <div className="stat-label">Catalog Value</div>
-              <div className="stat-value" style={{ fontSize: catalogProducts.length > 2 ? '1.5rem' : '1.8rem' }}>{portfolioValue}</div>
+              <div className={`stat-value ${catalogProducts.length > 2 ? "stat-value--compact" : ""}`}>{portfolioValue}</div>
             </div>
             <div className="stat-desc">
               Combined values of products
@@ -283,7 +290,7 @@ const Dashboard = () => {
           <div className="stat-card">
             <div>
               <div className="stat-label">Store Status</div>
-              <div className="stat-value" style={{ color: isStoreOnline ? '#10b981' : '#a0a0a0', fontSize: '1.6rem' }}>
+              <div className={`stat-value stat-value--status ${isStoreOnline ? "is-online" : "is-offline"}`}>
                 {isStoreOnline ? "ONLINE" : "OFFLINE"}
               </div>
             </div>
