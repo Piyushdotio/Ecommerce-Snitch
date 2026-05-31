@@ -9,7 +9,7 @@ import { useEffect } from "react";
 const App = () => {
   const { handlegetme } = useAuth();
   const user = useSelector((state) => state.auth.user);
-  // console.log(user);
+  console.log(user);
   useEffect(() => {
     handlegetme();
   }, []);
