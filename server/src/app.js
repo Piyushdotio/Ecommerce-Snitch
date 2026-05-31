@@ -9,20 +9,21 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: config.CLIENT_URL,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
-app.use("/api/auth", userRouter);
-app.use("/api/products", productRouter);
 app.use(passport.initialize());
 
+app.use("/api/auth", userRouter);
+app.use("/api/products", productRouter);
+
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback",
+    clientID: config.GOOGLE_CLIENT_ID,
+    clientSecret: config.GOOGLE_CLIENT_SECRET,
+    callbackURL: config.GOOGLE_CALLBACK_URL,
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, profile);
 }));

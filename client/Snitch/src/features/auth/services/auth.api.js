@@ -1,7 +1,11 @@
 import axios from "axios"
 
+export const AUTH_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
+    (import.meta.env.DEV ? "http://localhost:3000/api/auth" : "/api/auth")
+
 export const authapiInstance=axios.create({
-    baseURL:"/api/auth",
+    baseURL: AUTH_BASE_URL,
     withCredentials:true,
 })
 
@@ -53,4 +57,11 @@ export const Login =async({email,contact,password})=>{
         throw new Error(message)
     }
 }
-
+export const getme=async()=>{
+    try{
+        const response=await authapiInstance.get("/me")
+        return response.data
+    }catch(err){
+        console.log(err)
+    }
+}

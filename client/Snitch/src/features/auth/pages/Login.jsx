@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hook/useAuth';
+import { AUTH_BASE_URL } from '../services/auth.api';
 
 /* ─── Icons ─── */
 const EyeOpenIcon = () => (
@@ -123,15 +124,21 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isEmail = formData.emailOrPhone.includes('@');
-    const data = await handleLogin({
+    try{const user = await handleLogin({
       email: isEmail ? formData.emailOrPhone : undefined,
       contact: !isEmail ? formData.emailOrPhone : undefined,
       password: formData.password,
     });
 
-    if (data?.success) {
+    if (user.role=="buyer") {
       navigate('/');
     }
+    else if(user.role=="seller"){
+      navigate("/seller/dashboard")
+    }
+  }catch(err){
+    console.log(err)
+  }
   };
 
   return (
@@ -226,7 +233,7 @@ export default function Login() {
               style={{ width: 48, height: 48, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.09)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', transition: 'all 0.25s ease', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'; }}
-            ><a href="/api/auth/google"><Icon /></a></button>
+            ><a href={`${AUTH_BASE_URL}/google`}><Icon /></a></button>
           ))}
         </div>
 
@@ -238,3 +245,5 @@ export default function Login() {
     </div>
   );
 }
+
+

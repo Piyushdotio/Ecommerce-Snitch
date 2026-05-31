@@ -86,27 +86,52 @@ export const login=async(req,res)=>{
 
 }
 export const googleCallback=async(req,res)=>{
-    const {id,displayName,emails,photos}=req.user
-    const email=emails[0].value
-    const profile=photos[0].value
+    const {id,displayName,emails = []}=req.user
+    const email=emails[0]?.value
+
+    if(!email){
+        return res.status(400).json({
+            success:false,
+            message:"Google account email not found"
+        })
+    }
 
     let user=await userModel.findOne({
         email
     })
+
     if(!user){
-        const user=await userModel.create({
-            email:email,
+        user=await userModel.create({
+            email,
             googleId:id,
             fullname:displayName
-            
-
         })
     }
-    const token=await jwt.sign({
+
+    const token=jwt.sign({
       id:user._id, 
     },config.JWT_SECRET,{
         expiresIn:"7d"
     })
-    res.cookie("token",token)
-    res.redirect("http://localhost:5173/")
+
+    res.cookie("token",token, {
+        httpOnly: true,
+        sameSite: 'lax'
+    })
+    res.redirect(config.CLIENT_URL)
+}
+export const getMe=async(req,res)=>{
+    const user=req.user
+    res.status(200).json({
+        message:"user fetched successfully",
+        success:true,
+        user:{
+            id:user._id,
+            email:user.email,
+            contact:user.contact,
+            fullname:user.fullname,
+            role:user.role
+
+        }
+    })
 }

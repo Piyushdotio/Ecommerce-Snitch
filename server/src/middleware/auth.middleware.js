@@ -2,39 +2,63 @@ import jwt from "jsonwebtoken"
 import { config } from "../config/config.js"
 import userModel from "../models/userSchema.model.js"
 
-const verifySeller=async(req,res,next)=>{
-        const token=req.cookies.token
-        
-        if(!token){
-            return res.status(400).json({
-                message:"token not found"
+const getTokenFromRequest = (req) => {
+    const cookieToken = req.cookies?.token
+    if (cookieToken) {
+        return cookieToken
+    }
+
+    const authHeader = req.headers.authorization
+    if (!authHeader?.startsWith("Bearer ")) {
+        return null
+    }
+
+    return authHeader.slice(7).trim()
+}
+
+const verifyAuth = async (req, res, next, requiredRole) => {
+    const token = getTokenFromRequest(req)
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: "token not found",
+        })
+    }
+
+    try {
+        const decoded = jwt.verify(token, config.JWT_SECRET)
+        const user = await userModel.findById(decoded.id)
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "unauthorized",
             })
         }
-        try{
-            const decoded=await jwt.verify(token,config.JWT_SECRET)
-            console.log(decoded.id)
-            const user=await userModel.findById(
-                decoded.id
-            )
-            
-            if(user.role!="seller"){
-                return res.status(401).json({
-                    message:"you are not seller"
-                })
-            }
-            req.user=user
-            next()
-        }catch(err){
-            res.status(401).json(
-                {
-                    message:"Invalid Token"
-                }
-            )
+
+        if (requiredRole && user.role !== requiredRole) {
+            return res.status(403).json({
+                success: false,
+                message: "you are not seller",
+            })
         }
 
-
-
-
-
+        req.user = user
+        next()
+    } catch (err) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid Token",
+        })
+    }
 }
-export default verifySeller
+
+export const verifySeller = async (req, res, next) => {
+    return verifyAuth(req, res, next, "seller")
+}
+
+export const verifyUser = async (req, res, next) => {
+    return verifyAuth(req, res, next)
+}
+
