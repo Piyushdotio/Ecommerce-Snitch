@@ -302,8 +302,8 @@
   }
 
   .uploader-form-card {
-    overflow: hidden;
-    padding-right: 0;
+    overflow-y: auto;
+    padding-right: 16px;
   }
 
   .catalog-list-card {

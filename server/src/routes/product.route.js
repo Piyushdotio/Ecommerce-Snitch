@@ -6,7 +6,8 @@ import {
   uploadproductController,
   getsellerproductsController,
   getallproducts,
-  getProductDetails
+  getProductDetails,
+  addProductVariant
 } from "../controller/product.controller.js";
 
 const upload = multer({
@@ -68,5 +69,7 @@ productRouter.get("/showproduct", verifySeller, getsellerproductsController);
 productRouter.get("/",getallproducts)
 
 productRouter.get("/detail/:id",getProductDetails)
+
+productRouter.post("/:productId/variants",verifySeller,upload.array('images',7),addProductVariant)
 
 export default productRouter;

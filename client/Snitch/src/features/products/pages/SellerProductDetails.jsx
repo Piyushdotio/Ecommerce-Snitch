@@ -38,44 +38,81 @@ const IconSave = () => (
 
 const SellerProductDetails = () => {
   const { productId } = useParams();
-  const { handlegetProductById } = useProduct();
+  const { handlegetProductById,handleProductVariant } = useProduct();
 
-  // Basic Product State
+  /**
+   * Basic Product Metadata States
+   * - productTitle: Name of the product being viewed
+   * - basePrice: Fallback price from product details
+   * - skuCode: Formatted primary SKU of the product
+   * - status: Product listing status (e.g., 'active' or 'draft')
+   */
   const [productTitle, setProductTitle] = useState("");
   const [basePrice, setBasePrice] = useState("8999");
   const [skuCode, setSkuCode] = useState("SN-BLZ-ARCH");
   const [status, setStatus] = useState("active");
 
-  // Variants Array State
+  /**
+   * Local Variants State
+   * Stores the list of active product variants in local state.
+   * Each variant holds: id, sku, stock, price, images, and attributes array (e.g. ["Color: Black", "Size: M"]).
+   */
   const [variants, setVariants] = useState([]);
 
-  // UI Interactive States
+  /**
+   * UI & Notification States
+   * - toasts: Holds active toast notification messages
+   * - saving: Simulates network saving animation loader
+   * - editingIndex: Stores index of the variant row currently in inline-editing mode
+   * - isStatusOpen: Manages opening/closing of status selector dropdown
+   */
   const [toasts, setToasts] = useState([]);
   const [saving, setSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
-  // New variant form states
+  /**
+   * New Variant Input States
+   * Form inputs to configure a new variation prior to addition.
+   */
   const [newSku, setNewSku] = useState("");
   const [newStock, setNewStock] = useState("");
   const [newPrice, setNewPrice] = useState("");
-  
-  // Ref and state for variant image uploads
+  const [newCurrency, setNewCurrency] = useState("INR");
+
+  /**
+   * Variant Images Upload Reference & Preview States
+   * - fileInputRef: Controls access to the hidden file browser input
+   * - variantImages: Temporarily holds selected file objects and their local previews
+   */
   const fileInputRef = useRef(null);
   const [variantImages, setVariantImages] = useState([]);
 
-  // Dynamic attributes state
+  /**
+   * Dynamic Custom Attributes Creation State
+   * Key-value objects representing fields inside the creation form.
+   * Will be flattened into a simple array of strings when added.
+   */
   const [newAttributes, setNewAttributes] = useState([
     { key: "Color", value: "" },
     { key: "Size", value: "" }
   ]);
 
-  // Inline edit state values for editing variants
+  /**
+   * Inline Editing Intermediate States
+   * Holds transient cell values for editing variants in-place in the catalog list.
+   */
   const [editSku, setEditSku] = useState("");
   const [editStock, setEditStock] = useState(0);
   const [editPrice, setEditPrice] = useState(0);
+  const [editCurrency, setEditCurrency] = useState("INR");
 
-  // Trigger custom toast notification
+  /**
+   * Helper function to trigger interactive toast notifications
+   * Automatically clears notifications after 4 seconds.
+   * @param {string} message - Text message to show the user
+   * @param {'success'|'error'} type - Notification look and feel
+   */
   const addToast = (message, type = "success") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -84,13 +121,63 @@ const SellerProductDetails = () => {
     }, 4000);
   };
 
-  // Initial Load of product details
+  /**
+   * Helper function to format prices with appropriate currency symbols.
+   * @param {number|object} priceObj - Price value or object containing amount and currency
+   */
+  const formatPrice = (priceObj) => {
+    const amount = typeof priceObj === "object" ? priceObj.amount : priceObj;
+    const currency = typeof priceObj === "object" ? priceObj.currency : "INR";
+    const symbols = {
+      INR: "₹",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      JPY: "¥"
+    };
+    const symbol = symbols[currency] || "₹";
+    return `${symbol}${Number(amount || 0).toLocaleString("en-IN")}`;
+  };
+
+  /**
+   * Sanitizes the variants array by replacing temporary blob URL strings 
+   * (which expire on page reload) with a static placeholder image.
+   * @param {Array} list - Array of variant objects to sanitize
+   */
+  const sanitizeVariantsForLocalStorage = (list) => {
+    return list.map((v) => {
+      const sanitizedImages = (v.images || []).map((img) => {
+        const url = img.preview || img;
+        if (typeof url === "string" && url.startsWith("blob:")) {
+          return "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120";
+        }
+        return url;
+      });
+      return {
+        ...v,
+        images: sanitizedImages
+      };
+    });
+  };
+
+  /**
+   * Initial Load Effect Hook
+   * Fetches product metadata from API. For variants:
+   * 1. Checks localStorage for locally stored/updated variants first.
+   * 2. If no localStorage copy exists, transforms fetched API variants into a flat string-array format.
+   * 3. Falls back to mock configurations if variants are empty.
+   * Keeps local copy in sync with localStorage.
+   */
   useEffect(() => {
     let ignore = false;
 
     async function fetchData() {
       if (!productId) return;
       try {
+        // Attempt to restore locally saved variants list first
+        const localKey = `snitch_variants_${productId}`;
+        const storedVariantsJson = localStorage.getItem(localKey);
+
         const data = await handlegetProductById(productId);
         if (!ignore && data) {
           const prod = data.product || data;
@@ -98,60 +185,78 @@ const SellerProductDetails = () => {
           setBasePrice(prod.price?.amount || "8999");
           setSkuCode(prod._id ? `SN-BLZ-${prod._id.slice(-6).toUpperCase()}` : "SN-BLZ-ARCH");
           
+          if (storedVariantsJson) {
+            try {
+              const parsed = JSON.parse(storedVariantsJson);
+              if (Array.isArray(parsed)) {
+                setVariants(parsed);
+                return;
+              }
+            } catch (storageErr) {
+              console.error("Local storage variant parse error", storageErr);
+            }
+          }
+
           if (prod.variants && prod.variants.length > 0) {
             const mappedVariants = prod.variants.map((v) => {
               const attrs = v.attributes instanceof Map 
                 ? Object.fromEntries(v.attributes) 
                 : (v.attributes || {});
 
-              // Map dynamic attributes to array format
-              const formattedAttrs = Object.entries(attrs).map(([key, val]) => ({
-                key: key.charAt(0).toUpperCase() + key.slice(1),
-                value: val || ""
-              }));
+              // Flatten Map attributes into an array of simple "Key: Value" strings
+              const formattedAttrs = Object.entries(attrs).map(([key, val]) => {
+                const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
+                return `${formattedKey}: ${val || ""}`;
+              });
 
               return {
                 id: v._id || Math.random().toString(36).substring(7),
                 sku: attrs.sku || attrs.Sku || `SN-VAR-${Math.random().toString(36).substring(7).toUpperCase()}`,
                 stock: v.stock || 0,
-                price: v.price?.amount || prod.price?.amount || 8999,
-                attributes: formattedAttrs.length > 0 ? formattedAttrs : [{ key: "Color", value: "Black" }],
-                images: v.images || ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
+                price: {
+                  amount: v.price?.amount || prod.price?.amount || 8999,
+                  currency: v.price?.currency || prod.price?.currency || "INR"
+                },
+                attributes: formattedAttrs.length > 0 ? formattedAttrs : ["Color: Black"],
+                images: v.images && v.images.length > 0 ? v.images.map((img) => img.url || img) : ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
               };
             });
             setVariants(mappedVariants);
+            localStorage.setItem(localKey, JSON.stringify(mappedVariants));
           } else {
-            // Mock variants if none exist to demonstrate visual UI
-            setVariants([
+            // Setup preconfigured mock data with flat string attributes
+            const mockVariants = [
               { 
                 id: "1", 
                 sku: "SN-BLZ-BLK-M", 
                 stock: 45, 
-                price: prod.price?.amount || 8999, 
-                attributes: [{ key: "Color", value: "Black" }, { key: "Size", value: "M" }],
+                price: { amount: prod.price?.amount || 8999, currency: prod.price?.currency || "INR" }, 
+                attributes: ["Color: Black", "Size: M"],
                 images: ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
               },
               { 
                 id: "2", 
                 sku: "SN-BLZ-BLK-L", 
                 stock: 8, 
-                price: prod.price?.amount || 8999, 
-                attributes: [{ key: "Color", value: "Black" }, { key: "Size", value: "L" }],
+                price: { amount: prod.price?.amount || 8999, currency: prod.price?.currency || "INR" }, 
+                attributes: ["Color: Black", "Size: L"],
                 images: ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
               },
               { 
                 id: "3", 
                 sku: "SN-BLZ-BLK-XL", 
                 stock: 0, 
-                price: prod.price?.amount || 8999, 
-                attributes: [{ key: "Color", value: "Black" }, { key: "Size", value: "XL" }],
+                price: { amount: prod.price?.amount || 8999, currency: prod.price?.currency || "INR" }, 
+                attributes: ["Color: Black", "Size: XL"],
                 images: ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
               }
-            ]);
+            ];
+            setVariants(mockVariants);
+            localStorage.setItem(localKey, JSON.stringify(mockVariants));
           }
         }
       } catch (err) {
-        console.error("Failed to load product", err);
+        console.error("Failed to load product details", err);
         addToast("Error fetching product details", "error");
       }
     }
@@ -163,7 +268,10 @@ const SellerProductDetails = () => {
     };
   }, [productId, handlegetProductById]);
 
-  // Stock badge helper
+  /**
+   * Helper function to return visual stock label tags
+   * @param {number} stock - Number of units in stock
+   */
   const getStockBadge = (stock) => {
     if (stock <= 0) {
       return (
@@ -186,11 +294,19 @@ const SellerProductDetails = () => {
     );
   };
 
-  // Image Upload Handlers
+  /**
+   * Image Selection Triggers
+   * Forwards user click to hidden HTML file input.
+   */
   const handleImageClick = () => {
     if (fileInputRef.current) fileInputRef.current.click();
   };
 
+  /**
+   * Image Upload Handlers
+   * Instantiates image previews for draft variant configurations.
+   * Maximum allowed uploads is 7 images per variant.
+   */
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (variantImages.length + files.length > 7) {
@@ -205,30 +321,52 @@ const SellerProductDetails = () => {
     addToast(`${files.length} variant image(s) selected`);
   };
 
+  /**
+   * Removes selected draft variant image and revokes local object URL memory.
+   * @param {number} index - Index of selected draft image in array
+   */
   const removeVariantImage = (index) => {
     const updated = [...variantImages];
     URL.revokeObjectURL(updated[index].preview);
     updated.splice(index, 1);
     setVariantImages(updated);
+    addToast("Image removed");
   };
 
-  // Dynamic Attributes Editor Handlers
+  /**
+   * Adds a new empty attributes key/value row to the form.
+   */
   const addAttributeRow = () => {
     setNewAttributes([...newAttributes, { key: "", value: "" }]);
   };
 
+  /**
+   * Removes an attributes row at the specified index from the form.
+   * @param {number} index - Target index to remove
+   */
   const removeAttributeRow = (index) => {
     setNewAttributes(newAttributes.filter((_, i) => i !== index));
   };
 
+  /**
+   * Updates property key or property value in the creation form state.
+   * @param {number} index - Row index of modification
+   * @param {'key'|'value'} field - Targeted input field
+   * @param {string} val - Input value typed
+   */
   const updateAttributeRow = (index, field, val) => {
     const updated = [...newAttributes];
     updated[index][field] = val;
     setNewAttributes(updated);
   };
 
-  // Add new variant to local state
-  const handleAddVariant = (e) => {
+  /**
+   * Form Submission Handler
+   * Configures a new variant from form inputs.
+   * Validates inputs, maps attributes to a clean array of strings: ["Key: Value"],
+   * saves variant to state and persists to local storage.
+   */
+  const handleAddVariant = async(e) => {
     e.preventDefault();
     if (!newSku) {
       addToast("SKU Code is required to configure a variant", "error");
@@ -238,25 +376,67 @@ const SellerProductDetails = () => {
     const priceVal = newPrice ? Number(newPrice) : Number(basePrice);
     const stockVal = newStock ? Number(newStock) : 0;
 
-    // Filter empty attributes
-    const cleanAttributes = newAttributes.filter((attr) => attr.key.trim() !== "" && attr.value.trim() !== "");
+    // Map attributes into a clean array of strings (not array of objects)
+    const cleanAttributes = newAttributes
+      .filter((attr) => attr.key.trim() !== "" && attr.value.trim() !== "")
+      .map((attr) => `${attr.key.trim()}: ${attr.value.trim()}`);
 
     const newVarObj = {
       id: Math.random().toString(36).substring(7),
       sku: newSku,
       stock: stockVal,
-      price: priceVal,
-      attributes: cleanAttributes.length > 0 ? cleanAttributes : [{ key: "Option", value: "Default" }],
+      price: {
+        amount: priceVal,
+        currency: newCurrency
+      },
+      attributes: cleanAttributes.length > 0 ? cleanAttributes : ["Option: Default"],
       images: variantImages.length > 0 ? variantImages : ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
     };
+    let updatedVariants = [...variants, newVarObj];
+    try {
+      const resData = await handleProductVariant(productId, newVarObj);
+      if (resData && resData.product && resData.product.variants) {
+        const prod = resData.product;
+        updatedVariants = prod.variants.map((v) => {
+          const attrs = v.attributes instanceof Map 
+            ? Object.fromEntries(v.attributes) 
+            : (v.attributes || {});
 
-    setVariants([...variants, newVarObj]);
+          const formattedAttrs = Object.entries(attrs).map(([key, val]) => {
+            const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
+            return `${formattedKey}: ${val || ""}`;
+          });
+
+          return {
+            id: v._id || Math.random().toString(36).substring(7),
+            sku: attrs.sku || attrs.Sku || `SN-VAR-${Math.random().toString(36).substring(7).toUpperCase()}`,
+            stock: v.stock || 0,
+            price: {
+              amount: v.price?.amount || prod.price?.amount || 8999,
+              currency: v.price?.currency || prod.price?.currency || "INR"
+            },
+            attributes: formattedAttrs.length > 0 ? formattedAttrs : ["Color: Black"],
+            images: v.images && v.images.length > 0 ? v.images.map((img) => img.url || img) : ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Failed to upload variant to server, saving locally", err);
+    }
+    setVariants(updatedVariants);
+
+    // Persist list locally in localStorage
+    if (productId) {
+      localStorage.setItem(`snitch_variants_${productId}`, JSON.stringify(sanitizeVariantsForLocalStorage(updatedVariants)));
+    }
+
     addToast("Variant added to catalog locally");
 
-    // Reset Form fields
+    // Reset Creation form fields
     setNewSku("");
     setNewStock("");
     setNewPrice("");
+    setNewCurrency("INR");
     setVariantImages([]);
     setNewAttributes([
       { key: "Color", value: "" },
@@ -264,38 +444,72 @@ const SellerProductDetails = () => {
     ]);
   };
 
-  // Inline editing actions for active variants catalog
+  /**
+   * Starts Inline Table Row Editing
+   * Pre-populates intermediate states with selected variant cell values.
+   * @param {number} index - Index of variant selected for editing
+   */
   const startEditing = (index) => {
     setEditingIndex(index);
     setEditSku(variants[index].sku);
     setEditStock(variants[index].stock);
-    setEditPrice(variants[index].price);
+    setEditPrice(typeof variants[index].price === "object" ? variants[index].price.amount : variants[index].price);
+    setEditCurrency(typeof variants[index].price === "object" ? variants[index].price.currency : "INR");
   };
 
+  /**
+   * Saves Modified Inline Values to Local State and LocalStorage
+   * @param {number} index - Index of variant row to save
+   */
   const saveVariantRow = (index) => {
     const updated = [...variants];
     updated[index] = {
       ...updated[index],
       sku: editSku,
       stock: Number(editStock),
-      price: Number(editPrice)
+      price: {
+        amount: Number(editPrice),
+        currency: editCurrency
+      }
     };
     setVariants(updated);
+
+    // Persist list locally in localStorage
+    if (productId) {
+      localStorage.setItem(`snitch_variants_${productId}`, JSON.stringify(sanitizeVariantsForLocalStorage(updated)));
+    }
+
     setEditingIndex(null);
     addToast("Variant updated successfully");
   };
 
+  /**
+   * Deletes Variant from Catalog and syncs to LocalStorage
+   * @param {number} index - Index of target variant to delete
+   */
   const deleteVariant = (index) => {
     const updated = variants.filter((_, i) => i !== index);
     setVariants(updated);
+
+    // Persist updated list locally in localStorage
+    if (productId) {
+      localStorage.setItem(`snitch_variants_${productId}`, JSON.stringify(sanitizeVariantsForLocalStorage(updated)));
+    }
+
     addToast("Variant removed from catalog", "error");
   };
 
-  // Mock save actions
+  /**
+   * Simulates full save action to catalog
+   * Syncs the current state of variants to localStorage.
+   */
   const saveAllChanges = () => {
     setSaving(true);
     setTimeout(() => {
       setSaving(false);
+      if (productId) {
+        localStorage.setItem(`snitch_variants_${productId}`, JSON.stringify(sanitizeVariantsForLocalStorage(variants)));
+      }
       addToast("Catalog variations saved successfully! (Simulated)");
     }, 1000);
   };
@@ -380,18 +594,20 @@ const SellerProductDetails = () => {
               <h3 className="section-title-label"><IconPlus /> Configure Variant</h3>
               <form onSubmit={handleAddVariant}>
                 
-                {/* Basic inventory row */}
-                <div className="form-grid-pricing">
-                  <div className="form-group">
-                    <label>SKU Code</label>
-                    <input 
-                      type="text" 
-                      value={newSku} 
-                      onChange={(e) => setNewSku(e.target.value)} 
-                      placeholder="e.g. SN-BLZ-CH-M"
-                      required
-                    />
-                  </div>
+                {/* SKU Code Input Row */}
+                <div className="form-group" style={{ marginBottom: "16px" }}>
+                  <label>SKU Code</label>
+                  <input 
+                    type="text" 
+                    value={newSku} 
+                    onChange={(e) => setNewSku(e.target.value)} 
+                    placeholder="e.g. SN-BLZ-CH-M"
+                    required
+                  />
+                </div>
+
+                {/* Stock, Price and Currency Grid */}
+                <div className="form-grid-pricing" style={{ gridTemplateColumns: "1fr 1.2fr 1fr", gap: "16px" }}>
                   <div className="form-group">
                     <label>Stock Qty</label>
                     <input 
@@ -402,13 +618,35 @@ const SellerProductDetails = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Price Override (₹)</label>
+                    <label>Price Override</label>
                     <input 
                       type="number" 
                       value={newPrice} 
                       onChange={(e) => setNewPrice(e.target.value)} 
                       placeholder={basePrice}
                     />
+                  </div>
+                  <div className="form-group">
+                    <label>Currency</label>
+                    <select 
+                      value={newCurrency} 
+                      onChange={(e) => setNewCurrency(e.target.value)}
+                      style={{
+                        background: "rgba(15, 15, 15, 0.6)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "4px",
+                        color: "#fff",
+                        padding: "7px 10px",
+                        fontSize: "0.82rem",
+                        height: "35px"
+                      }}
+                    >
+                      <option value="INR">INR (₹)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="JPY">JPY (¥)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -523,14 +761,20 @@ const SellerProductDetails = () => {
                           {/* Dynamic Property Chips */}
                           <td>
                             <div className="attribute-tags-container">
-                              {v.attributes.map((attr, idx) => (
-                                attr.key && attr.value && (
-                                  <span key={idx} className="property-tag">
-                                    <span className="prop-name">{attr.key}:</span>
-                                    <span className="prop-val">{attr.value}</span>
-                                  </span>
-                                )
-                              ))}
+                              {v.attributes.map((attr, idx) => {
+                                // Split the "Key: Value" string to render key and value separately in the UI
+                                const separatorIndex = attr.indexOf(":");
+                                const key = separatorIndex !== -1 ? attr.slice(0, separatorIndex).trim() : attr;
+                                const value = separatorIndex !== -1 ? attr.slice(separatorIndex + 1).trim() : "";
+                                return (
+                                  key && (
+                                    <span key={idx} className="property-tag">
+                                      <span className="prop-name">{key}:</span>
+                                      <span className="prop-val">{value}</span>
+                                    </span>
+                                  )
+                                );
+                              })}
                             </div>
                           </td>
 
@@ -565,14 +809,29 @@ const SellerProductDetails = () => {
                           {/* Price */}
                           <td>
                             {isEditing ? (
-                              <input 
-                                type="number" 
-                                className="inline-edit-input" 
-                                value={editPrice} 
-                                onChange={(e) => setEditPrice(e.target.value)}
-                              />
+                              <div className="inline-currency-edit-row" style={{ display: "flex", gap: "4px" }}>
+                                <select 
+                                  value={editCurrency} 
+                                  onChange={(e) => setEditCurrency(e.target.value)}
+                                  className="inline-edit-input"
+                                  style={{ padding: "3px", width: "65px", background: "#111", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "3px", color: "#fff" }}
+                                >
+                                  <option value="INR">INR (₹)</option>
+                                  <option value="USD">USD ($)</option>
+                                  <option value="EUR">EUR (€)</option>
+                                  <option value="GBP">GBP (£)</option>
+                                  <option value="JPY">JPY (¥)</option>
+                                </select>
+                                <input 
+                                  type="number" 
+                                  className="inline-edit-input" 
+                                  value={editPrice} 
+                                  onChange={(e) => setEditPrice(e.target.value)}
+                                  style={{ width: "70px" }}
+                                />
+                              </div>
                             ) : (
-                              `₹${Number(v.price).toLocaleString("en-IN")}`
+                              formatPrice(v.price)
                             )}
                           </td>
 
@@ -586,7 +845,7 @@ const SellerProductDetails = () => {
                                 v.images.slice(0, 3).map((img, idx) => (
                                   <img 
                                     key={idx}
-                                    src={img.preview || img} 
+                                    src={img.preview || img.url || img} 
                                     alt="Variant Stack" 
                                     className="stack-img" 
                                     style={{ zIndex: 3 - idx }}
