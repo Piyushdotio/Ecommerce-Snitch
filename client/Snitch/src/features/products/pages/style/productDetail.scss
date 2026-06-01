@@ -1,3 +1,5 @@
+@use "sass:color";
+
 /* productDetail.scss - Premium SNITCH E-commerce Styles */
 
 // Core SCSS variables (consistent across themes)
@@ -783,8 +785,8 @@ $font-display: "Sora", sans-serif;
   border: 1px solid $tertiary;
 
   &:hover {
-    background: darken($tertiary, 6%);
-    border-color: darken($tertiary, 6%);
+    background: color.adjust($tertiary, $lightness: -6%);
+    border-color: color.adjust($tertiary, $lightness: -6%);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba($tertiary, 0.25);
   }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useProduct } from "../hook/useProduct";
 import { useSelector } from "react-redux";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation,useNavigate } from "react-router-dom";
 import "../pages/style/dashboard.scss";
 
 /* ─── SVG Icons ─── */
@@ -59,7 +59,7 @@ const Dashboard = () => {
   const { handleSellerProducts } = useProduct();
   const sellerProducts = useSelector((state) => state.product.sellerProducts);
   const location = useLocation();
-
+  const navigate=useNavigate()
   // Local state for interactive features
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStoreOnline, setIsStoreOnline] = useState(true);
@@ -150,28 +150,6 @@ const Dashboard = () => {
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
 
-  // KPI Calculations
-  const getTotalsString = () => {
-    const totals = {};
-    catalogProducts.forEach((p) => {
-      const curr = p.price?.currency || "INR";
-      const amt = p.price?.amount || 0;
-      totals[curr] = (totals[curr] || 0) + amt;
-    });
-    const entries = Object.entries(totals);
-    if (entries.length === 0) return "₹ 0";
-    return entries.map(([curr, amt]) => formatPrice(amt, curr)).join(" | ");
-  };
-
-  const totalProducts = catalogProducts.length;
-  const portfolioValue = getTotalsString();
-  
-  const inrProducts = catalogProducts.filter(p => (p.price?.currency || "INR") === "INR");
-  const avgPrice = inrProducts.length > 0
-    ? formatPrice(Math.round(inrProducts.reduce((sum, p) => sum + (p.price?.amount || 0), 0) / inrProducts.length), "INR")
-    : catalogProducts.length > 0
-      ? formatPrice(Math.round(catalogProducts.reduce((sum, p) => sum + (p.price?.amount || 0), 0) / catalogProducts.length), catalogProducts[0].price?.currency || "INR")
-      : "₹ 0";
 
   return (
     <div className="dashboard-container" data-theme={theme}>
@@ -246,61 +224,13 @@ const Dashboard = () => {
       <main className="main-content">
         <section className="header-section">
           <div className="title-area">
-            <span className="section-kicker">Seller Workspace</span>
             <h1>Product Dashboard</h1>
-            <p>Track inventory, review pricing, and keep your SNITCH catalog polished.</p>
           </div>
           <div className="header-actions">
             <Link to="/seller/create-product" className="add-product-btn">
               <span className="btn-icon">+</span>
               <span className="btn-text">Add Product</span>
             </Link>
-          </div>
-        </section>
-
-        {/* Stats Summary ribbon */}
-        <section className="stats-ribbon">
-          <div className="stat-card">
-            <div>
-              <div className="stat-label">Total Products</div>
-              <div className="stat-value">{totalProducts}</div>
-            </div>
-            <div className="stat-desc">
-              Active items in Snitch store
-            </div>
-          </div>
-          <div className="stat-card">
-            <div>
-              <div className="stat-label">Catalog Value</div>
-              <div className={`stat-value ${catalogProducts.length > 2 ? "stat-value--compact" : ""}`}>{portfolioValue}</div>
-            </div>
-            <div className="stat-desc">
-              Combined values of products
-            </div>
-          </div>
-          <div className="stat-card">
-            <div>
-              <div className="stat-label">Average Unit Price</div>
-              <div className="stat-value">{avgPrice}</div>
-            </div>
-            <div className="stat-desc">
-              Weighted average product pricing
-            </div>
-          </div>
-          <div className="stat-card">
-            <div>
-              <div className="stat-label">Store Status</div>
-              <div className={`stat-value stat-value--status ${isStoreOnline ? "is-online" : "is-offline"}`}>
-                {isStoreOnline ? "ONLINE" : "OFFLINE"}
-              </div>
-            </div>
-            <div className="stat-desc">
-              {isStoreOnline ? (
-                <span><span className="trend-up">●</span> Accept orders dynamically</span>
-              ) : (
-                <span><span className="trend-down">●</span> Orders paused</span>
-              )}
-            </div>
           </div>
         </section>
 
@@ -367,168 +297,171 @@ const Dashboard = () => {
         </section>
 
         {/* Product Catalog Display */}
-        {sortedProducts.length === 0 ? (
-          <div className="empty-state-card">
-            <div className="empty-icon-wrapper">
-              <span className="empty-icon">📦</span>
+        <div className="dashboard-scrollable-content">
+          {sortedProducts.length === 0 ? (
+            <div className="empty-state-card">
+              <div className="empty-icon-wrapper">
+                <span className="empty-icon">📦</span>
+              </div>
+              <h3>No Products Found</h3>
+              <p>
+                {searchQuery || currencyFilter !== "all"
+                  ? "No products match your search query or currency filters. Try refining your filters."
+                  : "You haven't uploaded any products to your catalog yet. Click below to add your first product."}
+              </p>
+              <Link to="/seller/create-product" className="create-first-btn">
+                <span>+ Create First Product</span>
+              </Link>
             </div>
-            <h3>No Products Found</h3>
-            <p>
-              {searchQuery || currencyFilter !== "all"
-                ? "No products match your search query or currency filters. Try refining your filters."
-                : "You haven't uploaded any products to your catalog yet. Click below to add your first product."}
-            </p>
-            <Link to="/seller/create-product" className="create-first-btn">
-              <span>+ Create First Product</span>
-            </Link>
-          </div>
-        ) : viewType === "grid" ? (
-          <div className="products-grid">
-            {sortedProducts.map((product) => {
-              const imageUrl = product.images?.[0]?.url;
-              const formattedDate = product.createdAt
-                ? new Date(product.createdAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                : "Just Now";
+          ) : viewType === "grid" ? (
+            <div className="products-grid">
+              {sortedProducts.map((product) => {
+                const imageUrl = product.images?.[0]?.url;
+                const formattedDate = product.createdAt
+                  ? new Date(product.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : "Just Now";
 
-              return (
-                <div key={product._id} className="product-card">
-                  <div className="image-wrapper">
-                    {imageUrl ? (
-                      <img src={imageUrl} alt={product.title || "Product image"} loading="lazy" />
-                    ) : (
-                      <div className="no-image-fallback">
-                        <span className="icon">👕</span>
-                        <span>No Image</span>
-                      </div>
-                    )}
-                    <div className="card-hover-actions">
-                      <button className="action-btn" onClick={() => alert(`View details of ${product.title}`)} aria-label="View Details">
-                        <EyeIcon /> View
-                      </button>
-                      <button className="action-btn" onClick={() => alert(`Edit ${product.title}`)} aria-label="Edit Product">
-                        <EditIcon /> Edit
-                      </button>
-                      <button className="action-btn delete-btn" onClick={() => handleDeleteProduct(product._id, product.title)} aria-label="Delete Product">
-                        <TrashIcon /> Delete
-                      </button>
-                    </div>
-                  </div>
-                  <div className="product-info">
-                    <div className="title-row">
-                      <h3 className="product-title" title={product.title}>{product.title}</h3>
-                      <span className="product-price">
-                        {formatPrice(product.price?.amount || 0, product.price?.currency || "INR")}
-                      </span>
-                    </div>
-                    <p className="product-desc">{product.description}</p>
-                    <div className="product-meta">
-                      <span className="meta-date">{formattedDate}</span>
-                      <div className="meta-sizes">
-                        {["S", "M", "L", "XL"].map((sz) => (
-                          <span key={sz} className="size-badge">
-                            {sz}
-                          </span>
-                        ))}
+                return (
+                  <div onClick={()=>navigate(`/seller/product/${product._id}`)}
+                   key={product._id} className="product-card">
+                    <div className="image-wrapper">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={product.title || "Product image"} loading="lazy" />
+                      ) : (
+                        <div className="no-image-fallback">
+                          <span className="icon">👕</span>
+                          <span>No Image</span>
+                        </div>
+                      )}
+                      <div className="card-hover-actions">
+                        <button className="action-btn" onClick={() => alert(`View details of ${product.title}`)} aria-label="View Details">
+                          <EyeIcon /> View
+                        </button>
+                        <button className="action-btn" onClick={() => alert(`Edit ${product.title}`)} aria-label="Edit Product">
+                          <EditIcon /> Edit
+                        </button>
+                        <button className="action-btn delete-btn" onClick={() => handleDeleteProduct(product._id, product.title)} aria-label="Delete Product">
+                          <TrashIcon /> Delete
+                        </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="products-list-wrapper">
-            <table className="products-table">
-              <thead>
-                <tr>
-                  <th scope="col" className="thumbnail-cell">Item</th>
-                  <th scope="col">Product Info</th>
-                  <th scope="col">Price</th>
-                  <th scope="col">Available Sizes</th>
-                  <th scope="col">Added On</th>
-                  <th scope="col" className="actions-cell">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedProducts.map((product) => {
-                  const imageUrl = product.images?.[0]?.url;
-                  const formattedDate = product.createdAt
-                    ? new Date(product.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "Just Now";
-
-                  return (
-                    <tr key={product._id}>
-                      <td className="thumbnail-cell">
-                        <div className="thumbnail-wrapper">
-                          {imageUrl ? (
-                            <img src={imageUrl} alt={product.title} />
-                          ) : (
-                            <div className="fallback">👕</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="name-cell">
-                        <div>{product.title}</div>
-                        <div className="desc-tip" title={product.description}>
-                          {product.description}
-                        </div>
-                      </td>
-                      <td className="price-cell">
-                        {formatPrice(product.price?.amount || 0, product.price?.currency || "INR")}
-                      </td>
-                      <td className="sizes-cell">
-                        <div className="sizes-list">
+                    <div className="product-info">
+                      <div className="title-row">
+                        <h3 className="product-title" title={product.title}>{product.title}</h3>
+                        <span className="product-price">
+                          {formatPrice(product.price?.amount || 0, product.price?.currency || "INR")}
+                        </span>
+                      </div>
+                      <p className="product-desc">{product.description}</p>
+                      <div className="product-meta">
+                        <span className="meta-date">{formattedDate}</span>
+                        <div className="meta-sizes">
                           {["S", "M", "L", "XL"].map((sz) => (
                             <span key={sz} className="size-badge">
                               {sz}
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className="date-cell">{formattedDate}</td>
-                      <td className="actions-cell">
-                        <div className="actions-wrapper">
-                          <button
-                            className="table-action-btn"
-                            onClick={() => alert(`View details of ${product.title}`)}
-                            title="View Details"
-                            aria-label="View Details"
-                          >
-                            <EyeIcon />
-                          </button>
-                          <button
-                            className="table-action-btn"
-                            onClick={() => alert(`Edit ${product.title}`)}
-                            title="Edit Product"
-                            aria-label="Edit Product"
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            className="table-action-btn delete-btn"
-                            onClick={() => handleDeleteProduct(product._id, product.title)}
-                            title="Delete Product"
-                            aria-label="Delete Product"
-                          >
-                            <TrashIcon />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="products-list-wrapper">
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th scope="col" className="thumbnail-cell">Item</th>
+                    <th scope="col">Product Info</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">Available Sizes</th>
+                    <th scope="col">Added On</th>
+                    <th scope="col" className="actions-cell">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedProducts.map((product) => {
+                    const imageUrl = product.images?.[0]?.url;
+                    const formattedDate = product.createdAt
+                      ? new Date(product.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Just Now";
+
+                    return (
+                      <tr key={product._id}>
+                        <td className="thumbnail-cell">
+                          <div className="thumbnail-wrapper">
+                            {imageUrl ? (
+                              <img src={imageUrl} alt={product.title} />
+                            ) : (
+                              <div className="fallback">👕</div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="name-cell">
+                          <div>{product.title}</div>
+                          <div className="desc-tip" title={product.description}>
+                            {product.description}
+                          </div>
+                        </td>
+                        <td className="price-cell">
+                          {formatPrice(product.price?.amount || 0, product.price?.currency || "INR")}
+                        </td>
+                        <td className="sizes-cell">
+                          <div className="sizes-list">
+                            {["S", "M", "L", "XL"].map((sz) => (
+                              <span key={sz} className="size-badge">
+                                {sz}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="date-cell">{formattedDate}</td>
+                        <td className="actions-cell">
+                          <div className="actions-wrapper">
+                            <button
+                              className="table-action-btn"
+                              onClick={() => alert(`View details of ${product.title}`)}
+                              title="View Details"
+                              aria-label="View Details"
+                            >
+                              <EyeIcon />
+                            </button>
+                            <button
+                              className="table-action-btn"
+                              onClick={() => alert(`Edit ${product.title}`)}
+                              title="Edit Product"
+                              aria-label="Edit Product"
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              className="table-action-btn delete-btn"
+                              onClick={() => handleDeleteProduct(product._id, product.title)}
+                              title="Delete Product"
+                              aria-label="Delete Product"
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

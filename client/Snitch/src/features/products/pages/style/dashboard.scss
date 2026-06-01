@@ -279,9 +279,28 @@ $transition: 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
   }
 
+  .dashboard-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    padding-bottom: 24px;
+
+    /* Custom scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: var(--dash-border) transparent;
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--dash-border);
+      border-radius: 2px;
+    }
+  }
+
   .header-section,
   .stats-ribbon,
   .toolbar-section,
+  .dashboard-scrollable-content,
   .products-grid,
   .products-list-wrapper,
   .empty-state-card {
@@ -340,28 +359,62 @@ $transition: 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     justify-content: center;
     gap: 10px;
     min-height: 48px;
-    padding: 0 18px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 107, 0, 0.14);
-    background: linear-gradient(135deg, $accent 0%, $accent-deep 100%);
-    color: #fff;
+    padding: 0 20px;
+    border-radius: 12px;
+    
+    // Skeuomorphic bevel borders
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.35);
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    
+    // Rich 3D gradient
+    background: linear-gradient(180deg, #ff8126 0%, $accent 55%, $accent-deep 100%);
+    color: #ffffff;
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-decoration: none;
-    box-shadow: 0 14px 28px rgba(255, 107, 0, 0.18);
-    transition: transform $transition, box-shadow $transition, filter $transition;
+    
+    // Layered 3D Shadow (Highlight, bottom shadow, ambient glow)
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.2),
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 8px 24px rgba(255, 107, 0, 0.2);
+      
+    transition: transform $transition, box-shadow $transition, filter $transition, background $transition;
 
     &:hover {
       transform: translateY(-2px);
-      filter: brightness(1.03);
-      box-shadow: 0 18px 34px rgba(255, 107, 0, 0.24);
+      background: linear-gradient(180deg, #ff8e3c 0%, #ff7613 55%, #e15e00 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.15),
+        0 4px 8px rgba(0, 0, 0, 0.2),
+        0 12px 30px rgba(255, 107, 0, 0.28);
+    }
+
+    &:active {
+      transform: translateY(1px);
+      border-top: 1px solid rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, $accent-deep 0%, $accent 100%);
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.35),
+        0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
     .btn-icon {
-      font-size: 1rem;
+      font-size: 1.05rem;
       line-height: 1;
+      font-weight: 800;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-text {
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
     }
   }
 
