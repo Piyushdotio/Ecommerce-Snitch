@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hook/useAuth';
 import { AUTH_BASE_URL } from '../services/auth.api';
 import './Register.scss';
+import { useTheme } from '../../../app/ThemeContext';
 
 const EyeOpenIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -116,6 +117,7 @@ function PasswordInput({ id, label, name, value, onChange }) {
 }
 
 export default function Register() {
+  const { theme } = useTheme();
   const { handleRegister } = useAuth();
   const navigate = useNavigate();
   const initialFormData = {
@@ -157,7 +159,7 @@ export default function Register() {
   };
 
   return (
-    <div className={`auth-page register-page ${mounted ? 'is-mounted' : ''}`}>
+    <div className={`auth-page register-page ${mounted ? 'is-mounted' : ''}`} data-theme={theme}>
       <div className="auth-page__background">
         <img src="/auth-ecommerce.png" alt="Snitch ecommerce collection" className="auth-page__background-image" />
         <div className="auth-page__background-overlay auth-page__background-overlay--side" />

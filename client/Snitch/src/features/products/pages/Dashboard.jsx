@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useProduct } from "../hook/useProduct";
 import { useSelector } from "react-redux";
 import { Link, useLocation,useNavigate } from "react-router-dom";
-import "../pages/style/dashboard.scss";
+import "./style/dashboard.scss";
+import { useTheme } from "../../../app/ThemeContext";
 
 /* ─── SVG Icons ─── */
 const GridIcon = () => (
@@ -63,18 +64,12 @@ const Dashboard = () => {
   // Local state for interactive features
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStoreOnline, setIsStoreOnline] = useState(true);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
-  });
+  const { theme, toggleTheme } = useTheme();
   const [viewType, setViewType] = useState("grid"); // grid | list
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // newest | price-asc | price-desc | name-asc | name-desc
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [deletedProductIds, setDeletedProductIds] = useState([]);
-
-  useEffect(() => {
-    localStorage.setItem("theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     const loadSellerProducts = async () => {
@@ -96,9 +91,7 @@ const Dashboard = () => {
     setIsSidebarCollapsed((prev) => !prev);
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+
 
   // Mock function to show responsiveness of deleting items
   const handleDeleteProduct = (productId, title) => {

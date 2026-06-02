@@ -105,7 +105,7 @@ $font-display: "Sora", sans-serif;
   flex-shrink: 0;
 
   @media (min-width: 1024px) {
-    position: relative;
+    position: fixed;
     height: 80px;
   }
 
@@ -297,7 +297,7 @@ $font-display: "Sora", sans-serif;
   width: 100%;
 
   @media (min-width: 1024px) {
-    padding-top: 24px;
+    padding-top: 104px; // 80px header height + 24px padding
     padding-bottom: 24px;
     padding-left: 40px;
     padding-right: 40px;
@@ -674,7 +674,7 @@ $font-display: "Sora", sans-serif;
 .swatch {
   width: 36px;
   height: 36px;
-  border: 1px solid var(--theme-border);
+  // border: 1px solid var(--theme-);
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -685,8 +685,8 @@ $font-display: "Sora", sans-serif;
   }
 
   &.active {
-    border-color: $tertiary;
-    box-shadow: 0 0 0 2px var(--theme-bg), 0 0 0 4px $tertiary;
+    border-color: white;
+    box-shadow: 0 0 0 2px var(--theme-bg), 0 0 0 4px white;
   }
 }
 
@@ -749,11 +749,6 @@ $font-display: "Sora", sans-serif;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-  &:active {
-    transform: translateY(0);
-  }
 
   @media (max-width: 768px) {
     padding: 14px 16px;
@@ -762,33 +757,30 @@ $font-display: "Sora", sans-serif;
 }
 
 .btn-add-bag {
-  background: transparent;
-  color: var(--theme-text);
-  border: 1px solid var(--theme-border);
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #10b981 !important;
 
   &:hover {
-    border-color: var(--theme-text);
-    background-color: rgba(255, 255, 255, 0.03);
+    background: #10b981 !important;
+    border-color: #10b981 !important;
   }
 
   &.success {
-    background: $success-color;
-    color: #fff;
-    border-color: $success-color;
-    box-shadow: 0 4px 12px rgba($success-color, 0.2);
+    background: #10b981 !important;
+    color: #fff !important;
+    border-color: #10b981 !important;
   }
 }
 
 .btn-buy-now {
-  background: $tertiary;
-  color: #fff;
-  border: 1px solid $tertiary;
+  background: #ff6b00 !important;
+  color: #ffffff !important;
+  border: 1px solid #ff6b00 !important;
 
   &:hover {
-    background: color.adjust($tertiary, $lightness: -6%);
-    border-color: color.adjust($tertiary, $lightness: -6%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba($tertiary, 0.25);
+    background: #ff6b00 !important;
+    border-color: #ff6b00 !important;
   }
 }
 
@@ -876,192 +868,11 @@ $font-display: "Sora", sans-serif;
   }
 }
 
-// 3. Footer Layout styles (Hidden on desktop to maintain non-scrollable page viewport)
-.home-footer {
-  width: 100%;
-  padding-top: 64px;
-  padding-bottom: 64px;
-  background-color: var(--theme-panel-lowest);
-  border-top: 1px solid var(--theme-border-light);
-  color: var(--theme-text-muted);
-  flex-shrink: 0;
-
-  @media (min-width: 1024px) {
-    display: none;
-  }
-
-  .footer-columns-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 40px;
-    padding-left: $margin-mobile;
-    padding-right: $margin-mobile;
-    max-width: $container-max;
-    margin-left: auto;
-    margin-right: auto;
-
-    @media (min-width: 768px) {
-      grid-template-columns: repeat(2, 1fr);
-      padding-left: $margin-desktop;
-      padding-right: $margin-desktop;
-    }
-
+// 3. Footer Layout styles (Hidden on desktop specifically for product details page to maintain non-scrollable page viewport)
+.product-detail-page-container {
+  .home-footer {
     @media (min-width: 1024px) {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  .footer-column {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .brand-column {
-    gap: 20px;
-  }
-
-  .footer-logo {
-    font-family: $font-sans;
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--theme-text);
-    letter-spacing: 0.1em;
-    margin: 0;
-  }
-
-  .footer-brand-desc {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    line-height: 1.7;
-    max-width: 280px;
-    margin: 0;
-  }
-
-  .footer-social-links {
-    display: flex;
-    gap: 12px;
-  }
-
-  .social-icon-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--theme-text-muted);
-    transition: all 0.3s ease;
-
-    &:hover {
-      background-color: var(--theme-text);
-      color: var(--theme-bg);
-    }
-  }
-
-  .links-column {
-    gap: 12px;
-
-    .column-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--theme-text);
-      margin-bottom: 8px;
-    }
-
-    .footer-link {
-      font-size: 11.5px;
-      transition: color 0.3s ease;
-
-      &:hover {
-        color: var(--theme-text);
-      }
-    }
-  }
-
-  .newsletter-column {
-    gap: 16px;
-
-    .column-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--theme-text);
-    }
-
-    .newsletter-text {
-      font-size: 11.5px;
-      line-height: 1.6;
-    }
-
-    .newsletter-input-wrapper {
-      display: flex;
-      border: 1px solid var(--theme-border-light);
-      border-radius: 6px;
-      overflow: hidden;
-      height: 44px;
-    }
-
-    .newsletter-email-input {
-      flex-grow: 1;
-      background: transparent;
-      border: none;
-      padding: 0 16px;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      color: var(--theme-text);
-      outline: none;
-    }
-
-    .newsletter-submit-btn {
-      width: 48px;
-      background-color: var(--theme-text);
-      border: none;
-      color: var(--theme-bg);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      transition: opacity 0.3s ease;
-
-      &:hover {
-        opacity: 0.9;
-      }
-    }
-  }
-
-  .footer-bottom-bar {
-    max-width: $container-max;
-    margin: 48px auto 0;
-    padding: 24px $margin-mobile 0;
-    border-top: 1px solid var(--theme-border-light);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    align-items: center;
-
-    @media (min-width: 768px) {
-      flex-direction: row;
-      justify-content: space-between;
-      padding-left: $margin-desktop;
-      padding-right: $margin-desktop;
-    }
-
-    .copyright-text {
-      font-size: 10px;
-      letter-spacing: 0.15em;
-    }
-
-    .payment-icons {
-      display: flex;
-      gap: 12px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: rgba(255, 255, 255, 0.1);
+      display: none;
     }
   }
 }

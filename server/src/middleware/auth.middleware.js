@@ -17,6 +17,7 @@ const getTokenFromRequest = (req) => {
 }
 
 const verifyAuth = async (req, res, next, requiredRole) => {
+    console.log("DEBUG: verifyAuth middleware hit! Token present:", !!getTokenFromRequest(req))
     const token = getTokenFromRequest(req)
 
     if (!token) {

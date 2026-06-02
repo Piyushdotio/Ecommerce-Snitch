@@ -5,6 +5,7 @@ import { router } from "./app.route";
 import { useSelector } from "react-redux";
 import { useAuth } from "../features/auth/hook/useAuth";
 import { useEffect } from "react";
+import { ThemeProvider } from "./ThemeContext";
 
 const App = () => {
   const { handlegetme } = useAuth();
@@ -13,7 +14,11 @@ const App = () => {
   useEffect(() => {
     handlegetme();
   }, []);
-  return <RouterProvider router={router} />;
+  return (
+    <ThemeProvider>
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
 };
 
 export default App;

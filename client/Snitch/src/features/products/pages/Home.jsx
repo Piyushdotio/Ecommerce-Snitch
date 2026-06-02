@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useProduct } from '../hook/useProduct';
 import { Link,useNavigate } from 'react-router-dom';
-import '../pages/style/Home.scss';
+import './style/Home.scss';
+import Footer from '../components/Footer';
+import { useTheme } from '../../../app/ThemeContext';
+
 
 const getCategory = (product) => {
   if (product.category) return product.category;
@@ -27,29 +30,100 @@ const formatPrice = (amount, currency) => {
   return `${symbol} ${Number(amount).toLocaleString("en-IN")}`;
 };
 
+const categoryCards = [
+  { id: "ALL", name: "All", title: "ALL PRODUCTS", img: "/category_all.webp" },
+  { id: "SHIRTS", name: "Essential Tees", title: "SHIRTS", img: "/category_shirts.webp" },
+  { id: "TROUSERS", name: "Denim", title: "TROUSERS", img: "/category_trousers.webp" },
+  { id: "POLOS", name: "Essential Tees", title: "POLOS", img: "/category_polos.webp" },
+  { id: "JEANS", name: "Denim", title: "JEANS", img: "/category_jeans.webp" },
+  { id: "CARGOS", name: "Denim", title: "CARGOS", img: "/category_cargos.webp" },
+  { id: "T-SHIRTS", name: "Essential Tees", title: "T-SHIRTS", img: "/category_tshirts.webp" },
+  { id: "SHORTS", name: "Denim", title: "SHORTS", img: "/category_shorts.webp" },
+  { id: "PLUS SIZE", name: "Essential Tees", title: "PLUS SIZE", img: "/category_plus_size.webp", badge: "3XL TO 6XL" },
+  { id: "SHOES", name: "Footwear", title: "SHOES", img: "/category_shoes.webp", badge: "JUST LAUNCHED" }
+];
+
+const heroSlides = [
+  {
+    id: 1,
+    title: "",
+    subtitle: "SUMMER SHIRTS",
+    img: "/shirts_slide.png",
+    buttonText: "STARTING AT ₹899"
+  },
+  {
+    id: 2,
+    title: "",
+    subtitle: "ARCHITECT TROUSERS",
+    img: "/architect_slide.png",
+    buttonText: "VIEW COLLECTION"
+  },
+  {
+    id: 3,
+    title: "",
+    subtitle: "STREETWEAR NEW DROPS",
+    img: "/streetwear_slide.png",
+    buttonText: "SHOP LATEST"
+  },
+  {
+    id: 4,
+    title: "MUST-HAVE",
+    subtitle: "DENIMS",
+    img: "/denim_slide.png",
+    options: ["BAGGY", "RELAXED", "STRAIGHT"]
+  }
+];
+
+
 const Home = () => {
   const products = useSelector((state) => state.product.products);
   const { handleallproducts } = useProduct();
   const navigate=useNavigate()
   
-  // Theme state persisted in localStorage
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
-  });
+  const { theme, toggleTheme } = useTheme();
   
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [activeCategoryCard, setActiveCategoryCard] = useState("ALL");
   const [cartCount, setCartCount] = useState(2);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const sliderRef = useRef(null);
+
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      alert(`Thank you! ${newsletterEmail} has been added to the Insiders Club.`);
+      setNewsletterEmail("");
+    }
+  };
+
+  const handleCategoryClick = (card) => {
+    setActiveCategoryCard(card.id);
+    setSelectedCategory(card.name);
+  };
 
   useEffect(() => {
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+    const timer = setInterval(() => {
+      if (sliderRef.current) {
+        const track = sliderRef.current;
+        const slideItem = track.querySelector('.hero-slide-item');
+        if (slideItem) {
+          const slideWidth = slideItem.clientWidth + 4; // slide width + gap (4px)
+          const currentScroll = track.scrollLeft;
+          const maxScroll = track.scrollWidth - track.clientWidth;
+          
+          if (currentScroll >= maxScroll - 10) {
+            track.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            track.scrollTo({ left: currentScroll + slideWidth, behavior: 'smooth' });
+          }
+        }
+      }
+    }, 4000); // Auto-scroll every 4 seconds
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     handleallproducts();
@@ -96,13 +170,21 @@ const Home = () => {
           </div>
           <div className="header-right">
             <div className="desktop-actions">
+              {/* Search Bar in Header */}
+              <div className="header-search-bar">
+                <span className="material-symbols-outlined search-icon">search</span>
+                <input 
+                  type="text"
+                  placeholder="SEARCH..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
               {/* Theme Toggle Button */}
               <button onClick={toggleTheme} className="action-icon-link theme-toggle-btn" title="Toggle Light/Dark Mode">
                 <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"}></i>
               </button>
-              <a href="#shop" className="action-icon-link">
-                <span className="material-symbols-outlined">search</span>
-              </a>
               <button onClick={() => alert("Cart panel coming soon!")} className="action-icon-link cart-button">
                 <span className="material-symbols-outlined">shopping_cart</span>
                 <span className="cart-badge">{cartCount}</span>
@@ -120,6 +202,16 @@ const Home = () => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="mobile-nav-panel">
+            {/* Search Bar on Mobile */}
+            <div className="mobile-search-bar">
+              <span className="material-symbols-outlined search-icon">search</span>
+              <input 
+                type="text"
+                placeholder="SEARCH..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
             <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Collections</a>
             <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">New Arrivals</a>
             <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Seller Dashboard</Link>
@@ -144,32 +236,65 @@ const Home = () => {
       </header>
 
       <main className="home-main-content">
+        {/* Hero Slider Section */}
+        <section className="hero-slider-section">
+          <div className="hero-slider-track" ref={sliderRef}>
+            {heroSlides.map((slide, index) => (
+              <div key={slide.id} className="hero-slide-item">
+                <img src={slide.img} alt={slide.subtitle} className="hero-slide-img" />
+                
+                {slide.options && (
+                  <div className="slide-center-options">
+                    {slide.options.map((opt) => (
+                      <span key={opt} className="slide-option-tag">{opt}</span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="hero-slide-overlay">
+                  <div className="slide-content-text">
+                    {slide.title && <span className="slide-title-prefix">{slide.title}</span>}
+                    <h2 className="slide-title-main">{slide.subtitle}</h2>
+                  </div>
+                  {slide.buttonText && (
+                    <button className="slide-action-btn">{slide.buttonText}</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+
         {/* Search & Filter Toolbar */}
         <section id="shop" className="search-filter-toolbar">
           <div className="toolbar-content-wrapper">
-            {/* Search Bar */}
-            <div className="search-bar-wrapper">
-              <span className="material-symbols-outlined search-bar-icon">search</span>
-              <input 
-                type="text"
-                className="search-bar-input"
-                placeholder="SEARCH PIECES..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            {/* Filters Row */}
-            <div className="categories-filter-row">
-              {["All", "Outerwear", "Essential Tees", "Denim", "Footwear", "Laptops"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`filter-category-btn ${selectedCategory === cat ? 'active' : ''}`}
-                >
-                  {cat}
-                </button>
-              ))}
+            {/* Category Grid Section */}
+            <div className="category-grid-container">
+              <div className="category-section-title-top">
+                <span>FEATURED CATEGORIES</span>
+              </div>
+              <div className="category-grid">
+                {categoryCards.map((card) => (
+                  <div
+                    key={card.id}
+                    onClick={() => handleCategoryClick(card)}
+                    className={`category-card ${activeCategoryCard === card.id ? 'active' : ''}`}
+                  >
+                    <div className="category-card-top">
+                      <span className="category-card-title">{card.title}</span>
+                      {card.badge && <span className="category-card-badge">{card.badge}</span>}
+                    </div>
+                    <div className="category-card-image-wrapper">
+                      <img src={card.img} alt={card.title} className="category-card-image" />
+                    </div>
+                    <div className="category-card-fade" />
+                  </div>
+                ))}
+              </div>
+              <div className="category-section-title">
+                <span>MATCH THE MOOD</span>
+              </div>
             </div>
           </div>
         </section>
@@ -237,6 +362,54 @@ const Home = () => {
           )}
         </section>
 
+        {/* Trend Spotlight Section */}
+        <section className="trend-spotlight-section">
+          <div className="spotlight-header">
+            <span className="spotlight-subtitle">Curated Trends</span>
+            <h2 className="spotlight-title">TREND SPOTLIGHT</h2>
+          </div>
+          <div className="spotlight-grid">
+            <div className="spotlight-card">
+              <div className="spotlight-image-wrapper">
+                <img src="/spotlight_gray.webp" alt="The Modern Minimalist" className="spotlight-img" />
+              </div>
+              <div className="spotlight-card-content">
+                <h3 className="spotlight-card-title">THE MODERN MINIMALIST</h3>
+                <p className="spotlight-card-desc">Sartorial elegance meets structured everyday utility.</p>
+                <button className="spotlight-card-btn" onClick={() => alert("Spotlight collection coming soon!")}>
+                  EXPLORE <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="spotlight-card">
+              <div className="spotlight-image-wrapper">
+                <img src="/spotlight_green.webp" alt="Earthy Tonals" className="spotlight-img" />
+              </div>
+              <div className="spotlight-card-content">
+                <h3 className="spotlight-card-title">EARTHY TONALS</h3>
+                <p className="spotlight-card-desc">Earthy olive and sage hues crafted in breathable fabrics.</p>
+                <button className="spotlight-card-btn" onClick={() => alert("Spotlight collection coming soon!")}>
+                  EXPLORE <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="spotlight-card">
+              <div className="spotlight-image-wrapper">
+                <img src="/spotlight_yellow.webp" alt="Summer Resort" className="spotlight-img" />
+              </div>
+              <div className="spotlight-card-content">
+                <h3 className="spotlight-card-title">SUMMER RESORT</h3>
+                <p className="spotlight-card-desc">Relaxed silhouettes tailored for the ultimate holiday vibe.</p>
+                <button className="spotlight-card-btn" onClick={() => alert("Spotlight collection coming soon!")}>
+                  EXPLORE <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Brand Feature Section */}
         <section className="studio-brand-section">
           <div className="studio-content-wrapper">
@@ -266,65 +439,60 @@ const Home = () => {
             </div>
           </div>
         </section>
+
+        {/* Brand Values Section */}
+        <section className="brand-values-section">
+          <div className="values-grid">
+            <div className="value-item">
+              <span className="material-symbols-outlined value-icon">local_shipping</span>
+              <h4 className="value-title">FREE SHIPPING</h4>
+              <p className="value-desc">On all orders above ₹999 across India.</p>
+            </div>
+            <div className="value-item">
+              <span className="material-symbols-outlined value-icon">assignment_return</span>
+              <h4 className="value-title">EASY RETURNS</h4>
+              <p className="value-desc">Hassle-free returns and exchange policy.</p>
+            </div>
+            <div className="value-item">
+              <span className="material-symbols-outlined value-icon">workspace_premium</span>
+              <h4 className="value-title">PREMIUM QUALITY</h4>
+              <p className="value-desc">Architectural silhouettes and custom fabrics.</p>
+            </div>
+            <div className="value-item">
+              <span className="material-symbols-outlined value-icon">security</span>
+              <h4 className="value-title">SECURE CHECKOUT</h4>
+              <p className="value-desc">100% encrypted checkout with top portals.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Newsletter Section */}
+        <section className="newsletter-section">
+          <div className="newsletter-content-box">
+            <span className="newsletter-tag">Join the Movement</span>
+            <h2 className="newsletter-title">THE INSIDERS CLUB</h2>
+            <p className="newsletter-description">
+              Subscribe for early access to collection drops, exclusive offers, and behind-the-scenes content.
+            </p>
+            <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
+              <input 
+                type="email" 
+                className="newsletter-input" 
+                placeholder="ENTER YOUR EMAIL..." 
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                required
+              />
+              <button type="submit" className="newsletter-btn">
+                JOIN NOW
+              </button>
+            </form>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="home-footer">
-        <div className="footer-columns-grid">
-          <div className="footer-column brand-column">
-            <h2 className="footer-logo">SNITCH</h2>
-            <p className="footer-brand-desc">
-              Defining the future of luxury streetwear through high-contrast minimalism and architectural precision.
-            </p>
-            <div className="footer-social-links">
-              <a href="#" className="social-icon-btn">
-                <span className="material-symbols-outlined">public</span>
-              </a>
-              <a href="#" className="social-icon-btn">
-                <span className="material-symbols-outlined">share</span>
-              </a>
-            </div>
-          </div>
-          
-          <div className="footer-column links-column">
-            <h4 className="column-title">Shop</h4>
-            <a className="footer-link" href="#">Collections</a>
-            <a className="footer-link" href="#">New Arrivals</a>
-            <a className="footer-link" href="#">Essentials</a>
-          </div>
-          
-          <div className="footer-column links-column">
-            <h4 className="column-title">Support</h4>
-            <a className="footer-link" href="#">Privacy Policy</a>
-            <a className="footer-link" href="#">Terms of Service</a>
-            <a className="footer-link" href="#">Shipping & Returns</a>
-          </div>
-          
-          <div className="footer-column newsletter-column">
-            <h4 className="column-title">Newsletter</h4>
-            <p className="newsletter-text">Join the exclusive circle for early access and collection drops.</p>
-            <div className="newsletter-input-wrapper">
-              <input 
-                className="newsletter-email-input" 
-                placeholder="EMAIL ADDRESS" 
-                type="email"
-              />
-              <button onClick={() => alert("Subscribed!")} className="newsletter-submit-btn">
-                <span className="material-symbols-outlined">arrow_right_alt</span>
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="footer-bottom-bar">
-          <span className="copyright-text">© 2026 SNITCH. ALL RIGHTS RESERVED.</span>
-          <div className="payment-icons">
-            <span className="payment-logo">Visa</span>
-            <span className="payment-logo">Mastercard</span>
-            <span className="payment-logo">Apple Pay</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

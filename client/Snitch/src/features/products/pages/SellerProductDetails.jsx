@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useProduct } from "../hook/useProduct";
 import { useParams, Link } from "react-router-dom";
 import "./style/sellerproductdetail.scss";
+import { useTheme } from "../../../app/ThemeContext";
 
 // Custom premium SVG Icons
 const IconEdit = () => (
@@ -37,6 +38,7 @@ const IconSave = () => (
 
 
 const SellerProductDetails = () => {
+  const { theme } = useTheme();
   const { productId } = useParams();
   const { handlegetProductById,handleProductVariant } = useProduct();
 
@@ -224,35 +226,9 @@ const SellerProductDetails = () => {
             setVariants(mappedVariants);
             localStorage.setItem(localKey, JSON.stringify(mappedVariants));
           } else {
-            // Setup preconfigured mock data with flat string attributes
-            const mockVariants = [
-              { 
-                id: "1", 
-                sku: "SN-BLZ-BLK-M", 
-                stock: 45, 
-                price: { amount: prod.price?.amount || 8999, currency: prod.price?.currency || "INR" }, 
-                attributes: ["Color: Black", "Size: M"],
-                images: ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
-              },
-              { 
-                id: "2", 
-                sku: "SN-BLZ-BLK-L", 
-                stock: 8, 
-                price: { amount: prod.price?.amount || 8999, currency: prod.price?.currency || "INR" }, 
-                attributes: ["Color: Black", "Size: L"],
-                images: ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
-              },
-              { 
-                id: "3", 
-                sku: "SN-BLZ-BLK-XL", 
-                stock: 0, 
-                price: { amount: prod.price?.amount || 8999, currency: prod.price?.currency || "INR" }, 
-                attributes: ["Color: Black", "Size: XL"],
-                images: ["https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=120"]
-              }
-            ];
-            setVariants(mockVariants);
-            localStorage.setItem(localKey, JSON.stringify(mockVariants));
+            // If no variants exist in database, initialize empty array
+            setVariants([]);
+            localStorage.setItem(localKey, JSON.stringify([]));
           }
         }
       } catch (err) {
@@ -515,7 +491,7 @@ const SellerProductDetails = () => {
   };
 
   return (
-    <div className="seller-product-details-container">
+    <div className="seller-product-details-container" data-theme={theme}>
       {/* Toast Drawer */}
       <div className="toast-container">
         {toasts.map((toast) => (

@@ -1,18 +1,72 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useProduct } from "../hook/useProduct.js";
-import "../pages/style/productDetail.scss";
+import "./style/productDetail.scss";
+import Footer from "../components/Footer";
+import { useTheme } from "../../../app/ThemeContext";
+import { useCart } from "../../Cart/hook/useCart.js";
+
+const getDefaultAttributeValue = (product, key) => {
+  if (!product) return null;
+  const lowerKey = key.toLowerCase();
+
+  if (lowerKey === 'color' || lowerKey === 'colour') {
+    const title = (product.title || "").toLowerCase();
+    const description = (product.description || "").toLowerCase();
+
+    const commonColors = [
+      "black", "white", "off-white", "offwhite", "grey", "gray",
+      "orange", "yellow", "red", "blue", "green", "brown",
+      "charcoal", "navy", "olive", "beige", "purple", "pink",
+      "cream", "khaki", "maroon", "teal"
+    ];
+
+    // Find all matching colors and their index in the title
+    let matches = [];
+    commonColors.forEach(color => {
+      const regex = new RegExp(`\\b${color}\\b`, 'g');
+      let match;
+      while ((match = regex.exec(title)) !== null) {
+        matches.push({ color, index: match.index });
+      }
+    });
+
+    if (matches.length > 0) {
+      matches.sort((a, b) => a.index - b.index);
+      const foundColor = matches[0].color;
+      return foundColor.charAt(0).toUpperCase() + foundColor.slice(1);
+    }
+
+    // If not in title, search in description
+    matches = [];
+    commonColors.forEach(color => {
+      const regex = new RegExp(`\\b${color}\\b`, 'g');
+      let match;
+      while ((match = regex.exec(description)) !== null) {
+        matches.push({ color, index: match.index });
+      }
+    });
+
+    if (matches.length > 0) {
+      matches.sort((a, b) => a.index - b.index);
+      const foundColor = matches[0].color;
+      return foundColor.charAt(0).toUpperCase() + foundColor.slice(1);
+    }
+
+    // Default fallback to "Grey" so the default product shows as a grey color swatch
+    return "Grey";
+  }
+
+  return null;
+};
 
 const ProductDetail = () => {
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const { handlegetProductById } = useProduct();
-
-  // Theme state (default to dark to match Snitch styling)
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
-  });
+  const {handleAddItem}=useCart()
+  const { theme, toggleTheme } = useTheme();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState("M");
   const [selectedColor, setSelectedColor] = useState(0);
@@ -20,9 +74,8 @@ const ProductDetail = () => {
   const [cartCount, setCartCount] = useState(2);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  // Dynamic user-selected variant attributes state
+  const [selectedAttributes, setSelectedAttributes] = useState({});
 
   useEffect(() => {
     let isMounted = true;
@@ -51,6 +104,7 @@ const ProductDetail = () => {
     };
   }, [productId, handlegetProductById]);
 
+  console.log(product, "product");
   // Demo fallback product with all required details
   const displayProduct = product || {
     title: "Men's Navy Blue & White Checked Cargo Shirt",
@@ -78,9 +132,73 @@ const ProductDetail = () => {
     sizes: ["S", "M", "L", "XL", "2XL"],
   };
 
-  // Safe checks to prevent runtime errors
-  const productImages = displayProduct.images && displayProduct.images.length > 0
-    ? displayProduct.images
+  // Collect dynamic attributes options from all available product variants
+  const attributeOptions = {};
+  if (displayProduct.variants && displayProduct.variants.length > 0) {
+    displayProduct.variants.forEach((v) => {
+      if (v.attributes) {
+        Object.entries(v.attributes).forEach(([key, val]) => {
+          if (!attributeOptions[key]) {
+            attributeOptions[key] = [];
+          }
+          if (!attributeOptions[key].includes(val)) {
+            attributeOptions[key].push(val);
+          }
+        });
+      }
+    });
+
+    // Add main product's default attribute values if they are not already present
+    Object.keys(attributeOptions).forEach((key) => {
+      const defaultValue = getDefaultAttributeValue(displayProduct, key);
+      if (defaultValue && !attributeOptions[key].includes(defaultValue)) {
+        // Prepend the default option so it shows first
+        attributeOptions[key].unshift(defaultValue);
+      }
+    });
+  }
+
+  // Automatically initialize user-selected attributes with the first option
+  useEffect(() => {
+    if (Object.keys(attributeOptions).length > 0) {
+      const initialAttrs = {};
+      Object.entries(attributeOptions).forEach(([key, opts]) => {
+        initialAttrs[key] = opts[0];
+      });
+      setSelectedAttributes(initialAttrs);
+    }
+  }, [product]);
+
+  // Find the active variant matching currently selected attributes
+  const getActiveVariant = () => {
+    if (!displayProduct.variants || displayProduct.variants.length === 0) return null;
+    return displayProduct.variants.find((v) => {
+      if (!v.attributes) return false;
+      return Object.entries(selectedAttributes).every(([key, val]) => {
+        return String(v.attributes[key]).toLowerCase() === String(val).toLowerCase();
+      });
+    });
+  };
+
+  const activeVariant = getActiveVariant();
+
+
+  // If a value is not available in the active variant, fall back to the main product values
+  const currentPrice = (activeVariant && activeVariant.price && activeVariant.price.amount)
+    ? activeVariant.price
+    : displayProduct.price;
+
+  const currentImages = (activeVariant && activeVariant.images && activeVariant.images.length > 0)
+    ? activeVariant.images
+    : displayProduct.images;
+
+  const currentStock = (activeVariant && typeof activeVariant.stock === "number")
+    ? activeVariant.stock
+    : (displayProduct.stock !== undefined ? displayProduct.stock : 10);
+
+  // Safe checks to prevent runtime errors on variant image list
+  const productImages = currentImages && currentImages.length > 0
+    ? currentImages
     : [
         {
           url: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800",
@@ -89,6 +207,11 @@ const ProductDetail = () => {
       ];
 
   const productSizes = displayProduct.sizes || ["S", "M", "L", "XL", "2XL"];
+
+  // Reset active image index to 0 when active variant changes
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [activeVariant?._id]);
 
   const handlePrevImage = () => {
     setActiveImageIndex((prev) =>
@@ -102,24 +225,36 @@ const ProductDetail = () => {
     );
   };
 
-  const handleAddToCart = () => {
-    setAddedSuccess(true);
-    setCartCount((prev) => prev + 1);
-    setTimeout(() => setAddedSuccess(false), 2000);
+  const handleAddToCart = async () => {
+    try {
+      const pId = product?._id || displayProduct?._id;
+      if (!pId) return;
+      const variantId = activeVariant?._id;
+      const res = await handleAddItem({ productId: pId, variantId });
+      alert(res?.message || "Item added to cart successfully!");
+      setAddedSuccess(true);
+      setCartCount((prev) => prev + 1);
+      setTimeout(() => setAddedSuccess(false), 2000);
+    } catch (err) {
+      console.error("Failed to add item to cart:", err);
+      alert("Failed to add item to cart: " + (err.message || err.error || JSON.stringify(err) || "Unknown error"));
+    }
   };
 
   const handleBuyNow = () => {
-    alert(`Redirecting to checkout for ${displayProduct.title} (Size: ${selectedSize})`);
+    const specs = Object.entries(selectedAttributes)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+    alert(`Redirecting to checkout for ${displayProduct.title} (${specs || `Size: ${selectedSize}`})`);
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+
 
   const formatPrice = (amount) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
-  const discount = displayProduct.originalPrice && displayProduct.price?.amount
+  
+  const discount = displayProduct.originalPrice && currentPrice?.amount
     ? Math.round(
-        ((displayProduct.originalPrice - displayProduct.price.amount) /
+        ((displayProduct.originalPrice - currentPrice.amount) /
           displayProduct.originalPrice) *
           100,
       )
@@ -263,19 +398,33 @@ const ProductDetail = () => {
 
             {/* Price & Rating */}
             <div className="price-rating-row">
-              <div className="price">
-                <span className="current">
-                  {formatPrice(displayProduct.price?.amount)}
-                </span>
-                {displayProduct.originalPrice && (
-                  <>
-                    <span className="original">
-                      {formatPrice(displayProduct.originalPrice)}
-                    </span>
-                    <span className="discount">{discount}% OFF</span>
-                  </>
-                )}
+              <div className="price" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+                  <span className="current">
+                    {formatPrice(currentPrice?.amount)}
+                  </span>
+                  {displayProduct.originalPrice && (
+                    <>
+                      <span className="original">
+                        {formatPrice(displayProduct.originalPrice)}
+                      </span>
+                      <span className="discount">{discount}% OFF</span>
+                    </>
+                  )}
+                </div>
+                
+                {/* Stock Status Indicator */}
+                <div className="stock-indicator" style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "0.8rem", marginTop: "4px" }}>
+                  {currentStock <= 0 ? (
+                    <span style={{ color: "#F87171", fontWeight: "600" }}>● Out of Stock</span>
+                  ) : currentStock <= 5 ? (
+                    <span style={{ color: "#FBBF24", fontWeight: "600" }}>● Only {currentStock} left in stock!</span>
+                  ) : (
+                    <span style={{ color: "#4ADE80", fontWeight: "600" }}>● In Stock ({currentStock} available)</span>
+                  )}
+                </div>
               </div>
+              
               <div className="rating">
                 <span className="stars">★ 4.6</span>
                 <span className="reviews">| 373 Reviews</span>
@@ -290,54 +439,105 @@ const ProductDetail = () => {
             {/* Material */}
             <div className="material-badge">100% Organic Heavyweight Cotton</div>
 
-            {/* Color Selection */}
-            <div className="selection-block">
-              <label>Select Colour</label>
-              <div className="color-swatches">
-                {[
-                  { name: "Vintage Black", hex: "#1A1A1A" },
-                  { name: "Off White", hex: "#F5F5F0" },
-                  { name: "Burnt Orange", hex: "#E05A00" },
-                ].map((color, idx) => (
-                  <button
-                    key={idx}
-                    className={`swatch ${selectedColor === idx ? "active" : ""}`}
-                    style={{ backgroundColor: color.hex }}
-                    onClick={() => setSelectedColor(idx)}
-                    title={color.name}
-                  />
-                ))}
-              </div>
-            </div>
+            {/* Variant Option Selectors (Dynamic) */}
+            {Object.keys(attributeOptions).length > 0 && (
+              // Dynamic Attribute Swatches & Option Selectors based on variants
+              Object.entries(attributeOptions).map(([key, options]) => {
+                const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
+                return (
+                  <div key={key} className="selection-block">
+                    <label>Select {capitalizedKey}</label>
+                    <div className="attribute-options-row" style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "8px" }}>
+                      {options.map((option) => {
+                        const isActive = String(selectedAttributes[key]).toLowerCase() === String(option).toLowerCase();
+                        const isColorKey = key.toLowerCase() === "color" || key.toLowerCase() === "colour";
+                        
+                        // Map of standard color strings to hex for swatches
+                        const colorHexMap = {
+                          black: "#1A1A1A",
+                          white: "#F5F5F0",
+                          offwhite: "#F5F5F0",
+                          orange: "#E05A00",
+                          yellow: "#EAB308",
+                          red: "#EF4444",
+                          blue: "#3B82F6",
+                          green: "#10B981",
+                          gray: "#6B7280",
+                          grey: "#6B7280",
+                          brown: "#8B4513",
+                          charcoal: "#36454F",
+                          navy: "#000080",
+                          olive: "#808000",
+                          beige: "#F5F5DC",
+                          purple: "#800080",
+                          pink: "#FFC0CB"
+                        };
+                        const hex = colorHexMap[option.toLowerCase().replace(/\s/g, "")] || null;
 
-            {/* Size Selection */}
-            <div className="selection-block">
-              <label>Select Size</label>
-              <div className="size-buttons">
-                {productSizes.map((size) => (
-                  <button
-                    key={size}
-                    className={`size-btn ${selectedSize === size ? "active" : ""}`}
-                    onClick={() => setSelectedSize(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-              <a href="#" className="size-guide">
-                Size guide ›
-              </a>
-            </div>
+                        if (isColorKey && hex) {
+                          return (
+                            <button
+                              key={option}
+                              className={`swatch ${isActive ? "active" : ""}`}
+                              style={{ 
+                                backgroundColor: hex,
+                                width: "34px",
+                                height: "34px",
+                                borderRadius: "50%",
+                                border: isActive ? "2.5px solid #ffffff" : "1px solid rgba(255,255,255,0.15)",
+                                cursor: "pointer",
+                                outline: "none"
+                              }}
+                              onClick={() => setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
+                              title={option}
+                            />
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={option}
+                            className={`size-btn ${isActive ? "active" : ""}`}
+                            onClick={() => setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
+                            style={{
+                              background: isActive ? "#ffffff" : "rgba(255,255,255,0.03)",
+                              border: isActive ? "1px solid #ffffff" : "1px solid rgba(255,255,255,0.08)",
+                              color: isActive ? "#000000" : "inherit",
+                              padding: "6px 14px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.8rem",
+                              textTransform: "uppercase",
+                              width: "auto",
+                              height: "auto",
+                              minWidth: "48px",
+                              minHeight: "36px"
+                            }}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
 
             {/* Action Buttons */}
             <div className="action-buttons">
               <button
                 className={`btn-add-bag ${addedSuccess ? "success" : ""}`}
                 onClick={handleAddToCart}
+                disabled={currentStock <= 0}
               >
-                {addedSuccess ? "☑ ADDED TO CART" : "ADD TO CART"}
+                {addedSuccess ? "☑ ADDED TO CART" : currentStock <= 0 ? "OUT OF STOCK" : "ADD TO CART"}
               </button>
-              <button className="btn-buy-now" onClick={handleBuyNow}>
+              <button 
+                className="btn-buy-now" 
+                onClick={handleBuyNow}
+                disabled={currentStock <= 0}
+              >
                 BUY NOW
               </button>
               <button className="btn-heart">♡</button>
@@ -359,65 +559,7 @@ const ProductDetail = () => {
       </main>
 
       {/* Footer */}
-      <footer className="home-footer">
-        <div className="footer-columns-grid">
-          <div className="footer-column brand-column">
-            <h2 className="footer-logo">SNITCH</h2>
-            <p className="footer-brand-desc">
-              Defining the future of luxury streetwear through high-contrast minimalism and architectural precision.
-            </p>
-            <div className="footer-social-links">
-              <a href="#" className="social-icon-btn">
-                <i className="ri-global-line"></i>
-              </a>
-              <a href="#" className="social-icon-btn">
-                <i className="ri-instagram-line"></i>
-              </a>
-              <a href="#" className="social-icon-btn">
-                <i className="ri-twitter-x-line"></i>
-              </a>
-            </div>
-          </div>
-
-          <div className="footer-column links-column">
-            <h4 className="column-title">Shop</h4>
-            <Link className="footer-link" to="/">Collections</Link>
-            <Link className="footer-link" to="/">New Arrivals</Link>
-            <Link className="footer-link" to="/">Essentials</Link>
-          </div>
-
-          <div className="footer-column links-column">
-            <h4 className="column-title">Support</h4>
-            <Link className="footer-link" to="/">Privacy Policy</Link>
-            <Link className="footer-link" to="/">Terms of Service</Link>
-            <Link className="footer-link" to="/">Shipping & Returns</Link>
-          </div>
-
-          <div className="footer-column newsletter-column">
-            <h4 className="column-title">Newsletter</h4>
-            <p className="newsletter-text">Join the exclusive circle for early access and collection drops.</p>
-            <div className="newsletter-input-wrapper">
-              <input
-                className="newsletter-email-input"
-                placeholder="EMAIL ADDRESS"
-                type="email"
-              />
-              <button onClick={() => alert("Subscribed!")} className="newsletter-submit-btn">
-                <i className="ri-arrow-right-line"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom-bar">
-          <span className="copyright-text">© 2026 SNITCH. ALL RIGHTS RESERVED.</span>
-          <div className="payment-icons">
-            <span className="payment-logo">Visa</span>
-            <span className="payment-logo">Mastercard</span>
-            <span className="payment-logo">Apple Pay</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

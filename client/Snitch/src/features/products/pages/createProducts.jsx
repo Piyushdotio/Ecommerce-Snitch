@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useProduct } from '../hook/useProduct';
-import '../pages/style/createProduct.scss';
+import './style/createProduct.scss';
+import { useTheme } from '../../../app/ThemeContext';
 
 const CreateProducts = () => {
   const navigate = useNavigate();
@@ -9,9 +10,7 @@ const CreateProducts = () => {
   const { handleCreateProducts } = useProduct();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isStoreOnline, setIsStoreOnline] = useState(true);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "dark";
-  });
+  const { theme, toggleTheme } = useTheme();
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [colors, setColors] = useState(['#ff6b00', '#000000', '#ffffff']);
@@ -21,10 +20,6 @@ const CreateProducts = () => {
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
-
-  React.useEffect(() => {
-    localStorage.setItem("theme", theme);
-  }, [theme]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -88,9 +83,7 @@ const CreateProducts = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+
 
   const resetForm = () => {
     setTitle('');
