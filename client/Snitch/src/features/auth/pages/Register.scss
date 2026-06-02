@@ -570,7 +570,7 @@
     border: 0;
     outline: 0;
     background: transparent;
-    color: var(--auth-text);
+    color: #ffffff;
     caret-color: var(--auth-accent);
     font-family: 'Inter', sans-serif;
     font-size: 0.95rem;
@@ -583,7 +583,7 @@
     &:-webkit-autofill,
     &:-webkit-autofill:hover,
     &:-webkit-autofill:focus {
-      -webkit-text-fill-color: var(--auth-text);
+      -webkit-text-fill-color: #ffffff;
       box-shadow: 0 0 0 1000px rgba(22, 22, 22, 0.95) inset;
       transition: background-color 9999s ease-in-out 0s;
     }
