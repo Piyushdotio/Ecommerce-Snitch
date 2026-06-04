@@ -1,6 +1,7 @@
+import mongoose from "mongoose"
 import cartModel from "../models/cart.model.js"
 import productModel from "../models/product.model.js"
-import {stockOfVariant} from "../dao/product.dao.js"
+import { stockOfVariant } from "../dao/product.dao.js"
 
 export const addToCart = async (req, res) => {
     console.log("DEBUG: addToCart controller hit! params:", req.params, "body:", req.body, "user:", req.user?._id)
@@ -34,9 +35,9 @@ export const addToCart = async (req, res) => {
 
         const cart = await cartModel.findOne({ user: req.user._id }) || await cartModel.create({ user: req.user._id })
         console.log("DEBUG: Cart resolved. Current items count:", cart.items.length)
-        
-        const cartItem = cart.items.find(item => 
-            item.product.toString() === productId && 
+
+        const cartItem = cart.items.find(item =>
+            item.product.toString() === productId &&
             (item.variant ? item.variant.toString() : "") === (variantId || "") &&
             (item.size || "") === (req.body.size || "")
         )
@@ -45,10 +46,10 @@ export const addToCart = async (req, res) => {
             const quantityInCart = cartItem.quantity
             console.log("DEBUG: Item already in cart. Current qty:", quantityInCart)
             if (quantityInCart + quantity <= 0) {
-                cart.items = cart.items.filter(item => 
-                    !(item.product.toString() === productId && 
-                      (item.variant ? item.variant.toString() : "") === (variantId || "") &&
-                      (item.size || "") === (req.body.size || ""))
+                cart.items = cart.items.filter(item =>
+                    !(item.product.toString() === productId &&
+                        (item.variant ? item.variant.toString() : "") === (variantId || "") &&
+                        (item.size || "") === (req.body.size || ""))
                 )
                 await cart.save()
                 console.log("DEBUG: Item removed from cart. Saved items count:", cart.items.length)
@@ -76,7 +77,7 @@ export const addToCart = async (req, res) => {
         if (quantity > stock) {
             console.log("DEBUG: Quantity exceeds stock. Stock:", stock, "Requested:", quantity)
             return res.status(400).json({
-                message: `Only ${stock} items are in stock.`,  
+                message: `Only ${stock} items are in stock.`,
                 success: false
             })
         }
@@ -109,49 +110,135 @@ export const addToCart = async (req, res) => {
 export const getCart = async (req, res) => {
     try {
         const user = req.user
-        let cart = await cartModel.findOne({ user: user._id }).populate("items.product")
-        if (!cart) {
-            cart = await cartModel.create({ user: user._id, items: [] })
-        }
 
-        // Build response with BOTH prices:
-        //   item.savedPrice   = price stored in MongoDB at time user added this item to cart
-        //   item.currentPrice = live price of this product/variant from seller right now
-        const cartObj = cart.toObject()
-        for (const item of cartObj.items) {
-            const product = item.product
-
-            // Rename item.price → item.savedPrice so it's unambiguous
-            item.savedPrice = item.price
-
-            if (product) {
-                // Start with product-level price as fallback
-                let livePrice = product.price
-
-                // If item has a variant, use that variant's price if it exists
-                if (item.variant && product.variants && product.variants.length > 0) {
-                    const variant = product.variants.find(
-                        v => v._id.toString() === item.variant.toString()
-                    )
-                    if (variant && variant.price && variant.price.amount != null) {
-                        livePrice = variant.price
+        // Use aggregate to populate product AND compute totalPrice in one query.
+        // IMPORTANT: use $lookup pipeline so variants are kept as an array (not unwound),
+        // which correctly handles items that have no variant selected.
+        const results = await cartModel.aggregate([
+            {
+                $match: {
+                    user: new mongoose.Types.ObjectId(user._id)
+                }
+            },
+            { $unwind: { path: '$items', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'items.product',
+                    foreignField: '_id',
+                    as: 'items.product'
+                }
+            },
+            { $unwind: { path: '$items.product', preserveNullAndEmptyArrays: true } },
+            // Compute the live current price for each item (variant price or product price)
+            {
+                $addFields: {
+                    'items.currentPrice': {
+                        $let: {
+                            vars: {
+                                matchedVariant: {
+                                    $first: {
+                                        $filter: {
+                                            input: { $ifNull: ['$items.product.variants', []] },
+                                            as: 'v',
+                                            cond: { $eq: ['$$v._id', '$items.variant'] }
+                                        }
+                                    }
+                                }
+                            },
+                            in: {
+                                $cond: {
+                                    if: { $and: [{ $ne: ['$$matchedVariant', null] }, { $ne: ['$$matchedVariant.price', null] }] },
+                                    then: '$$matchedVariant.price',
+                                    else: '$items.product.price'
+                                }
+                            }
+                        }
+                    },
+                    // savedPrice = price stored in DB at the time user added this item
+                    'items.savedPrice': '$items.price',
+                    // itemTotalAmount = quantity * live price (for totalPrice sum)
+                    'itemTotalAmount': {
+                        $multiply: [
+                            '$items.quantity',
+                            {
+                                $cond: {
+                                    if: {
+                                        $and: [
+                                            { $ne: ['$items.variant', null] },
+                                            {
+                                                $gt: [{
+                                                    $size: {
+                                                        $filter: {
+                                                            input: { $ifNull: ['$items.product.variants', []] },
+                                                            as: 'v',
+                                                            cond: { $eq: ['$$v._id', '$items.variant'] }
+                                                        }
+                                                    }
+                                                }, 0]
+                                            }
+                                        ]
+                                    },
+                                    then: {
+                                        $getField: {
+                                            field: 'amount',
+                                            input: {
+                                                $getField: {
+                                                    field: 'price',
+                                                    input: {
+                                                        $first: {
+                                                            $filter: {
+                                                                input: { $ifNull: ['$items.product.variants', []] },
+                                                                as: 'v',
+                                                                cond: { $eq: ['$$v._id', '$items.variant'] }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    else: '$items.product.price.amount'
+                                }
+                            }
+                        ]
                     }
                 }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    user: { $first: '$user' },
+                    totalPrice: { $sum: '$itemTotalAmount' },
+                    currency: { $first: '$items.currentPrice.currency' },
+                    items: { $push: '$items' }
+                }
+            }
+        ])
 
-                item.currentPrice = livePrice
-                item.priceChanged = (
-                    item.savedPrice && item.currentPrice &&
-                    item.savedPrice.amount !== item.currentPrice.amount
-                )
+        // aggregate() returns plain JS objects — no .toObject() needed
+        let cart = results[0]
+
+        if (!cart) {
+            // Empty or new cart — create one
+            await cartModel.create({ user: user._id, items: [] })
+            cart = { _id: null, user: user._id, items: [], totalPrice: 0, currency: 'INR' }
+        }
+
+        // Attach priceChanged flag to each item
+        for (const item of cart.items) {
+            if (item.savedPrice && item.currentPrice) {
+                item.priceChanged = item.savedPrice.amount !== item.currentPrice.amount
             }
         }
 
         return res.status(200).json({
             message: "Cart fetched successfully",
             success: true,
-            cart: cartObj
+            cart
         })
     } catch (error) {
+        console.error("getCart error:", error)
         return res.status(500).json({
             message: error.message,
             success: false
@@ -164,7 +251,7 @@ export const removeFromCart = async (req, res) => {
         const { productId, variantId } = req.params
         const { size } = req.query
         const cart = await cartModel.findOne({ user: req.user._id })
-        
+
         if (!cart) {
             return res.status(404).json({
                 message: "Cart not found",
@@ -172,10 +259,10 @@ export const removeFromCart = async (req, res) => {
             })
         }
 
-        cart.items = cart.items.filter(item => 
-            !(item.product.toString() === productId && 
-              (item.variant ? item.variant.toString() : "") === (variantId || "") &&
-              (!size || item.size === size))
+        cart.items = cart.items.filter(item =>
+            !(item.product.toString() === productId &&
+                (item.variant ? item.variant.toString() : "") === (variantId || "") &&
+                (!size || item.size === size))
         )
 
         await cart.save()
@@ -196,27 +283,27 @@ export const updateCartItem = async (req, res) => {
     try {
         const { productId } = req.params;
         const { oldVariantId, oldSize, newVariantId, newSize } = req.body;
-        
+
         const cart = await cartModel.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({ message: "Cart not found", success: false });
         }
-        
+
         // Find the item to update
         const item = cart.items.find(item =>
             item.product.toString() === productId &&
             (item.variant ? item.variant.toString() : "") === (oldVariantId || "") &&
             (item.size || "") === (oldSize || "")
         );
-        
+
         if (!item) {
             return res.status(404).json({ message: "Item not found in cart", success: false });
         }
-        
+
         // Target values
         const targetVariantId = newVariantId !== undefined ? newVariantId : (item.variant ? item.variant.toString() : undefined);
         const targetSize = newSize !== undefined ? newSize : item.size;
-        
+
         // Check if another item with the target variant and size already exists. If so, merge them!
         const existingItem = cart.items.find(i =>
             i !== item &&
@@ -224,7 +311,7 @@ export const updateCartItem = async (req, res) => {
             (i.variant ? i.variant.toString() : "") === (targetVariantId || "") &&
             (i.size || "") === (targetSize || "")
         );
-        
+
         if (existingItem) {
             existingItem.quantity += item.quantity;
             cart.items = cart.items.filter(i => i !== item);
@@ -236,7 +323,7 @@ export const updateCartItem = async (req, res) => {
                 item.size = newSize || undefined;
             }
         }
-        
+
         await cart.save();
         return res.status(200).json({ message: "Cart item updated successfully", success: true, cart });
     } catch (error) {

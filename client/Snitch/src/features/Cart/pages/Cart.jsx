@@ -251,8 +251,8 @@ const Cart = () => {
   const progressFill = subtotal >= threshold ? 100 : (subtotal / threshold) * 100
   const amountNeededForFreeShipping = threshold - subtotal
 
-  const tax = subtotal * 0.18
-  const total = subtotal + shippingCost + tax
+  const tax = 0
+  const total = subtotal + shippingCost
 
   if (loading) {
     return (
@@ -497,10 +497,6 @@ const Cart = () => {
                 <span className="summary-panel__value">
                   {shippingCost === 0 ? "FREE" : formatPrice({ amount: shippingCost, currency })}
                 </span>
-              </div>
-              <div className="summary-panel__row">
-                <span>Estimated Tax (18% GST)</span>
-                <span className="summary-panel__value">{formatPrice({ amount: tax, currency })}</span>
               </div>
               <div className="summary-panel__row summary-panel__row--total">
                 <span>Total</span>
