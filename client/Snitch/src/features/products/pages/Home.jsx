@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useProduct } from '../hook/useProduct';
+import { useCart } from '../../Cart/hook/useCart';
 import { Link,useNavigate } from 'react-router-dom';
 import './style/Home.scss';
 import Footer from '../components/Footer';
@@ -78,6 +79,11 @@ const heroSlides = [
 const Home = () => {
   const products = useSelector((state) => state.product.products);
   const { handleallproducts } = useProduct();
+  const { handleGetCart, handleAddItem } = useCart();
+  const cartItems = useSelector((state) => state.cart.items || []);
+  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const user = useSelector((state) => state.auth?.user);
+  const isSeller = user?.role === "seller";
   const navigate=useNavigate()
   
   const { theme, toggleTheme } = useTheme();
@@ -86,7 +92,6 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [activeCategoryCard, setActiveCategoryCard] = useState("ALL");
-  const [cartCount, setCartCount] = useState(2);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const sliderRef = useRef(null);
@@ -102,6 +107,15 @@ const Home = () => {
   const handleCategoryClick = (card) => {
     setActiveCategoryCard(card.id);
     setSelectedCategory(card.name);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value.trim() !== "") {
+      setSelectedCategory("All");
+      setActiveCategoryCard("ALL");
+    }
   };
 
   useEffect(() => {
@@ -129,6 +143,17 @@ const Home = () => {
     handleallproducts();
   }, [handleallproducts]);
 
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        await handleGetCart();
+      } catch (err) {
+        // Silently fail if user is not authenticated
+      }
+    };
+    fetchCart();
+  }, []);
+
   const dbProducts = Array.isArray(products) ? products : [];
 
   // Filter products by category and search query
@@ -145,10 +170,40 @@ const Home = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handleQuickAdd = (e, productTitle) => {
+  const handleQuickAdd = async (e, product) => {
     e.stopPropagation();
-    setCartCount(prev => prev + 1);
-    alert(`Added ${productTitle} to Cart!`);
+    try {
+      let variantId = undefined;
+      const sizeVal = "M"; // Always default size medium
+
+      if (product.variants && product.variants.length > 0) {
+        const mediumVariant = product.variants.find((v) => {
+          if (!v.attributes) return false;
+          if (typeof v.attributes.get === 'function') {
+            const sz = v.attributes.get('size') || v.attributes.get('Size');
+            return sz && String(sz).toUpperCase() === 'M';
+          }
+          return Object.entries(v.attributes).some(
+            ([key, val]) => key.toLowerCase() === "size" && String(val).toUpperCase() === "M"
+          );
+        });
+
+        if (mediumVariant) {
+          variantId = mediumVariant._id;
+        }
+      }
+
+      await handleAddItem({
+        productId: product._id,
+        variantId,
+        size: sizeVal
+      });
+      alert(`Added ${product.title} to Cart!`);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Please login to add items to cart.");
+      navigate("/login");
+    }
   };
 
   return (
@@ -163,9 +218,11 @@ const Home = () => {
             <nav className="desktop-nav">
               <a href="#shop" className="nav-link">Collections</a>
               <a href="#shop" className="nav-link">New Arrivals</a>
-              <Link to="/seller/dashboard" className="nav-link seller-link">
-                Seller Dashboard
-              </Link>
+              {isSeller && (
+                <Link to="/seller/dashboard" className="nav-link seller-link">
+                  Seller Dashboard
+                </Link>
+              )}
             </nav>
           </div>
           <div className="header-right">
@@ -177,7 +234,15 @@ const Home = () => {
                   type="text"
                   placeholder="SEARCH..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const element = document.getElementById("shop");
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth" });
+                      }
+                    }
+                  }}
                 />
               </div>
 
@@ -185,10 +250,12 @@ const Home = () => {
               <button onClick={toggleTheme} className="action-icon-link theme-toggle-btn" title="Toggle Light/Dark Mode">
                 <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"}></i>
               </button>
-              <button onClick={() => alert("Cart panel coming soon!")} className="action-icon-link cart-button">
-                <span className="material-symbols-outlined">shopping_cart</span>
-                <span className="cart-badge">{cartCount}</span>
-              </button>
+              {!isSeller && (
+                <button onClick={() => navigate("/cart")} className="action-icon-link cart-button" title="View Cart">
+                  <span className="material-symbols-outlined">shopping_cart</span>
+                  <span className="cart-badge">{cartCount}</span>
+                </button>
+              )}
               <Link to="/login" className="action-icon-link">
                 <span className="material-symbols-outlined">person</span>
               </Link>
@@ -209,12 +276,23 @@ const Home = () => {
                 type="text"
                 placeholder="SEARCH..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setMobileMenuOpen(false);
+                    const element = document.getElementById("shop");
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }
+                }}
               />
             </div>
             <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Collections</a>
             <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">New Arrivals</a>
-            <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Seller Dashboard</Link>
+            {isSeller && (
+              <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Seller Dashboard</Link>
+            )}
             <div className="divider"></div>
             <div className="mobile-actions">
               {/* Theme Toggle in Mobile Nav */}
@@ -222,10 +300,12 @@ const Home = () => {
                 <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"}></i>
                 <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
               </button>
-              <button onClick={() => { setMobileMenuOpen(false); alert("Cart panel coming soon!"); }} className="mobile-action-item">
-                <span className="material-symbols-outlined">shopping_cart</span>
-                <span>Cart ({cartCount})</span>
-              </button>
+              {!isSeller && (
+                <button onClick={() => { setMobileMenuOpen(false); navigate("/cart"); }} className="mobile-action-item">
+                  <span className="material-symbols-outlined">shopping_cart</span>
+                  <span>Cart ({cartCount})</span>
+                </button>
+              )}
               <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mobile-action-item">
                 <span className="material-symbols-outlined">person</span>
                 <span>Login</span>
@@ -331,7 +411,7 @@ const Home = () => {
                       />
                       <div className="product-quick-add-overlay">
                         <button 
-                          onClick={(e) => handleQuickAdd(e, product.title)}
+                          onClick={(e) => handleQuickAdd(e, product)}
                           className="quick-add-button"
                         >
                           Quick Add +

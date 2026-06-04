@@ -507,6 +507,9 @@ const SellerProductDetails = () => {
         {/* Header Breadcrumbs & Controls */}
         <div className="seller-top-bar">
           <div className="breadcrumbs">
+            <Link to="/seller/dashboard" className="back-arrow-btn" title="Back to Dashboard">
+              ←
+            </Link>
             <Link to="/seller/dashboard">Dashboard</Link>
             <span className="separator">/</span>
             <span className="current">Products</span>
@@ -607,15 +610,6 @@ const SellerProductDetails = () => {
                     <select 
                       value={newCurrency} 
                       onChange={(e) => setNewCurrency(e.target.value)}
-                      style={{
-                        background: "rgba(15, 15, 15, 0.6)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
-                        borderRadius: "4px",
-                        color: "#fff",
-                        padding: "7px 10px",
-                        fontSize: "0.82rem",
-                        height: "35px"
-                      }}
                     >
                       <option value="INR">INR (₹)</option>
                       <option value="USD">USD ($)</option>
@@ -790,7 +784,7 @@ const SellerProductDetails = () => {
                                   value={editCurrency} 
                                   onChange={(e) => setEditCurrency(e.target.value)}
                                   className="inline-edit-input"
-                                  style={{ padding: "3px", width: "65px", background: "#111", border: "1px solid rgba(255, 255, 255, 0.1)", borderRadius: "3px", color: "#fff" }}
+                                  style={{ padding: "3px", width: "65px" }}
                                 >
                                   <option value="INR">INR (₹)</option>
                                   <option value="USD">USD ($)</option>

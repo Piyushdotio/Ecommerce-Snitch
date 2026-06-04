@@ -164,6 +164,10 @@ const Dashboard = () => {
         </div>
 
         <nav className="nav-links">
+          <Link to="/" className="nav-item">
+            <div className="icon"><i className="ri-home-4-line"></i></div>
+            <span className="sidebar-label">Home</span>
+          </Link>
           <Link to="/seller/dashboard" className={`nav-item ${location.pathname.includes("/dashboard") ? "active" : ""}`}>
             <div className="icon"><i className="ri-dashboard-2-line"></i></div>
             <span className="sidebar-label">Dashboard</span>

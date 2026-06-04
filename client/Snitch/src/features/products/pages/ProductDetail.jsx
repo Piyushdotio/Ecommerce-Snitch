@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useProduct } from "../hook/useProduct.js";
 import "./style/productDetail.scss";
 import Footer from "../components/Footer";
@@ -65,14 +66,37 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const { handlegetProductById } = useProduct();
-  const {handleAddItem}=useCart()
+  const { handleAddItem, handleGetCart } = useCart();
+  const cartItems = useSelector((state) => state.cart.items || []);
+  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const user = useSelector((state) => state.auth?.user);
+  const isSeller = user?.role === "seller";
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState("M");
   const [selectedColor, setSelectedColor] = useState(0);
   const [addedSuccess, setAddedSuccess] = useState(false);
-  const [cartCount, setCartCount] = useState(2);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [zoomProps, setZoomProps] = useState({ show: false, x: 0, y: 0, bgX: 0, bgY: 0 });
+
+  const handleMouseMove = (e) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    const bgX = (x / width) * 100;
+    const bgY = (y / height) * 100;
+    setZoomProps({ show: true, x, y, bgX, bgY });
+  };
+
+  const handleMouseLeave = () => {
+    setZoomProps((prev) => ({ ...prev, show: false }));
+  };
+
+  const handleMouseEnter = () => {
+    setZoomProps((prev) => ({ ...prev, show: true }));
+  };
 
   // Dynamic user-selected variant attributes state
   const [selectedAttributes, setSelectedAttributes] = useState({});
@@ -99,6 +123,16 @@ const ProductDetail = () => {
     };
 
     fetchProductDetails();
+    
+    const fetchCartData = async () => {
+      try {
+        await handleGetCart();
+      } catch (err) {
+        // Silently fail if user is not authenticated
+      }
+    };
+    fetchCartData();
+
     return () => {
       isMounted = false;
     };
@@ -157,6 +191,8 @@ const ProductDetail = () => {
       }
     });
   }
+
+  const hasSizeAttribute = Object.keys(attributeOptions).some(k => k.toLowerCase() === 'size');
 
   // Automatically initialize user-selected attributes with the first option
   useEffect(() => {
@@ -230,10 +266,15 @@ const ProductDetail = () => {
       const pId = product?._id || displayProduct?._id;
       if (!pId) return;
       const variantId = activeVariant?._id;
-      const res = await handleAddItem({ productId: pId, variantId });
+      const sizeKey = Object.keys(selectedAttributes).find(k => k.toLowerCase() === 'size');
+      const resolvedSize = sizeKey ? selectedAttributes[sizeKey] : selectedSize;
+      const res = await handleAddItem({ 
+        productId: pId, 
+        variantId, 
+        size: resolvedSize 
+      });
       alert(res?.message || "Item added to cart successfully!");
       setAddedSuccess(true);
-      setCartCount((prev) => prev + 1);
       setTimeout(() => setAddedSuccess(false), 2000);
     } catch (err) {
       console.error("Failed to add item to cart:", err);
@@ -281,9 +322,11 @@ const ProductDetail = () => {
             <nav className="desktop-nav">
               <Link to="/" className="nav-link">Collections</Link>
               <Link to="/" className="nav-link">New Arrivals</Link>
-              <Link to="/seller/dashboard" className="nav-link seller-link">
-                Seller Dashboard
-              </Link>
+              {isSeller && (
+                <Link to="/seller/dashboard" className="nav-link seller-link">
+                  Seller Dashboard
+                </Link>
+              )}
             </nav>
           </div>
           <div className="header-right">
@@ -295,10 +338,12 @@ const ProductDetail = () => {
               <Link to="/" className="action-icon-link">
                 <i className="ri-search-line"></i>
               </Link>
-              <button onClick={() => alert("Cart panel coming soon!")} className="action-icon-link cart-button">
-                <i className="ri-shopping-cart-2-line"></i>
-                <span className="cart-badge">{cartCount}</span>
-              </button>
+              {!isSeller && (
+                <button onClick={() => navigate("/cart")} className="action-icon-link cart-button" title="View Cart">
+                  <i className="ri-shopping-cart-2-line"></i>
+                  <span className="cart-badge">{cartCount}</span>
+                </button>
+              )}
               <Link to="/login" className="action-icon-link">
                 <i className="ri-user-line"></i>
               </Link>
@@ -314,7 +359,9 @@ const ProductDetail = () => {
           <div className="mobile-nav-panel">
             <Link to="/" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Collections</Link>
             <Link to="/" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">New Arrivals</Link>
-            <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Seller Dashboard</Link>
+            {isSeller && (
+              <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Seller Dashboard</Link>
+            )}
             <div className="divider"></div>
             <div className="mobile-actions">
               {/* Theme Toggle in Mobile Nav */}
@@ -322,10 +369,12 @@ const ProductDetail = () => {
                 <i className={theme === "dark" ? "ri-sun-line" : "ri-moon-line"}></i>
                 <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
               </button>
-              <button onClick={() => { setMobileMenuOpen(false); alert("Cart panel coming soon!"); }} className="mobile-action-item">
-                <i className="ri-shopping-cart-2-line"></i>
-                <span>Cart ({cartCount})</span>
-              </button>
+              {!isSeller && (
+                <button onClick={() => { setMobileMenuOpen(false); navigate("/cart"); }} className="mobile-action-item">
+                  <i className="ri-shopping-cart-2-line"></i>
+                  <span>Cart ({cartCount})</span>
+                </button>
+              )}
               <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mobile-action-item">
                 <i className="ri-user-line"></i>
                 <span>Login</span>
@@ -338,8 +387,11 @@ const ProductDetail = () => {
       {/* Main product detail container */}
       <main className="product-detail-main">
         {/* Breadcrumb */}
-        <nav className="breadcrumb">
-          <Link to="/">Home</Link>
+        <nav className="breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', verticalAlign: 'middle' }}>arrow_back</span>
+            Home
+          </Link>
           <span> / </span>
           <Link to="/">Shop</Link>
           <span> / </span>
@@ -362,12 +414,41 @@ const ProductDetail = () => {
               ))}
             </div>
 
-            <div className="main-image-wrapper">
+            <div 
+              className="main-image-wrapper"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onMouseEnter={handleMouseEnter}
+              style={{ position: 'relative' }}
+            >
               <img
                 src={productImages[activeImageIndex]?.url}
                 alt={productImages[activeImageIndex]?.alt || displayProduct.title}
                 className="main-image"
               />
+
+              {/* Circular Zoom Lens */}
+              {zoomProps.show && (
+                <div
+                  className="product-zoom-lens"
+                  style={{
+                    position: 'absolute',
+                    left: `${zoomProps.x - 75}px`,
+                    top: `${zoomProps.y - 75}px`,
+                    width: '150px',
+                    height: '150px',
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255, 255, 255, 0.8)',
+                    boxShadow: '0 5px 15px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.2)',
+                    backgroundImage: `url(${productImages[activeImageIndex]?.url})`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '250% 250%',
+                    backgroundPosition: `${zoomProps.bgX}% ${zoomProps.bgY}%`,
+                    pointerEvents: 'none',
+                    zIndex: 20
+                  }}
+                />
+              )}
 
               {/* Navigation Arrows */}
               {productImages.length > 1 && (
@@ -484,7 +565,7 @@ const ProductDetail = () => {
                                 width: "34px",
                                 height: "34px",
                                 borderRadius: "50%",
-                                border: isActive ? "2.5px solid #ffffff" : "1px solid rgba(255,255,255,0.15)",
+                                border: isActive ? "2.5px solid var(--theme-text)" : "1px solid var(--theme-border)",
                                 cursor: "pointer",
                                 outline: "none"
                               }}
@@ -500,9 +581,6 @@ const ProductDetail = () => {
                             className={`size-btn ${isActive ? "active" : ""}`}
                             onClick={() => setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
                             style={{
-                              background: isActive ? "#ffffff" : "rgba(255,255,255,0.03)",
-                              border: isActive ? "1px solid #ffffff" : "1px solid rgba(255,255,255,0.08)",
-                              color: isActive ? "#000000" : "inherit",
                               padding: "6px 14px",
                               borderRadius: "4px",
                               cursor: "pointer",
@@ -522,6 +600,36 @@ const ProductDetail = () => {
                   </div>
                 );
               })
+            )}
+
+            {/* Fallback Size Selection if not provided by variants */}
+            {!hasSizeAttribute && (
+              <div className="selection-block" style={{ marginTop: '16px' }}>
+                <label>Select Size</label>
+                <div className="attribute-options-row" style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "8px" }}>
+                  {productSizes.map((size) => {
+                    const isActive = selectedSize === size;
+                    return (
+                      <button
+                        key={size}
+                        className={`size-btn ${isActive ? "active" : ""}`}
+                        onClick={() => setSelectedSize(size)}
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "0.8rem",
+                          textTransform: "uppercase",
+                          minWidth: "48px",
+                          minHeight: "36px"
+                        }}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
 
             {/* Action Buttons */}

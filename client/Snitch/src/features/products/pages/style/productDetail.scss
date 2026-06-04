@@ -685,8 +685,8 @@ $font-display: "Sora", sans-serif;
   }
 
   &.active {
-    border-color: white;
-    box-shadow: 0 0 0 2px var(--theme-bg), 0 0 0 4px white;
+    border-color: var(--theme-text);
+    box-shadow: 0 0 0 2px var(--theme-bg), 0 0 0 4px var(--theme-text);
   }
 }
 
