@@ -7,6 +7,7 @@ import { config } from "./config/config.js";
 import productRouter from "./routes/product.route.js";
 import cookieParser from "cookie-parser";
 import cartRouter from "./routes/cart.route.js";
+import wishlistRouter from "./routes/wishlist.route.js";
 
 const app = express();
 app.use(cors({
@@ -21,6 +22,7 @@ app.use(passport.initialize());
 app.use("/api/auth", userRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart",cartRouter);
+app.use("/api/wishlist", wishlistRouter);
 
 passport.use(new GoogleStrategy({
     clientID: config.GOOGLE_CLIENT_ID,

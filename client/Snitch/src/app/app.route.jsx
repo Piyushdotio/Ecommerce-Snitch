@@ -8,6 +8,9 @@ import Home from "../features/products/pages/Home.jsx";
 import ProductDetail from "../features/products/pages/ProductDetail.jsx";
 import SellerProductDetails from "../features/products/pages/SellerProductDetails.jsx";
 import Cart from "../features/Cart/pages/Cart.jsx";
+import OrderSuccess from "../features/Cart/pages/orderSuccess.jsx";
+import Wishlist from "../features/Wishlist/pages/Wishlist.jsx";
+import Orders from "../features/Cart/pages/Orders.jsx";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -29,6 +32,24 @@ export const router = createBrowserRouter([
     path:"/cart",
     element:<Protected>
       <Cart/>
+    </Protected>
+  },
+  {
+    path:"/order-success",
+    element:<Protected>
+      <OrderSuccess/>
+    </Protected>
+  },
+  {
+    path:"/orders",
+    element:<Protected>
+      <Orders/>
+    </Protected>
+  },
+  {
+    path:"/wishlist",
+    element:<Protected>
+      <Wishlist/>
     </Protected>
   },
   {

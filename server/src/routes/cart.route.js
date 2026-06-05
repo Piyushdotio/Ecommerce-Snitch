@@ -1,5 +1,13 @@
 import express from "express";
-import { addToCart, getCart, removeFromCart, updateCartItem } from "../controller/cart.controller.js";
+import {
+  addToCart,
+  getCart,
+  removeFromCart,
+  updateCartItem,
+  createOrder,
+  verifyPayment,
+  getUserOrders,
+} from "../controller/cart.controller.js";
 import { verifyUser } from "../middleware/auth.middleware.js";
 import { validateAddToCart } from "../validator/cart.validator.js";
 
@@ -49,5 +57,15 @@ router.delete("/remove/:productId", verifyUser, removeFromCart)
  * @body newSize - New size of the item(optional)
  */
 router.put("/update/:productId", verifyUser, updateCartItem)
+
+/**
+ * @route Post /api/cart/payment/create/order
+ * @description Create order for payment
+ * 
+ */
+
+router.post("/payment/create/order", verifyUser,createOrder)
+router.post("/payment/verify", verifyUser, verifyPayment)
+router.get("/orders", verifyUser, getUserOrders)
 
 export default router

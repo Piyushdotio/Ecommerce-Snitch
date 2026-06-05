@@ -20,6 +20,14 @@ const productSchema = new mongoose.Schema(
       type:priceSchema,
       required:true
     },
+    category: {
+      type: String,
+      default: "Shirts",
+    },
+    stock: {
+      type: Number,
+      default: 0,
+    },
     images: [
       {
         url: {

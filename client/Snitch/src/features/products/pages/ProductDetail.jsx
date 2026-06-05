@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useProduct } from "../hook/useProduct.js";
@@ -6,6 +6,7 @@ import "./style/productDetail.scss";
 import Footer from "../components/Footer";
 import { useTheme } from "../../../app/ThemeContext";
 import { useCart } from "../../Cart/hook/useCart.js";
+import { useWishlist } from "../../Wishlist/hook/useWishlist.js";
 
 const getDefaultAttributeValue = (product, key) => {
   if (!product) return null;
@@ -73,6 +74,8 @@ const ProductDetail = () => {
   const isSeller = user?.role === "seller";
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { handleToggleWishlist, handleGetWishlist, isWishlisted } = useWishlist();
+  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState("M");
   const [selectedColor, setSelectedColor] = useState(0);
@@ -101,6 +104,12 @@ const ProductDetail = () => {
   // Dynamic user-selected variant attributes state
   const [selectedAttributes, setSelectedAttributes] = useState({});
 
+  const isInitialFetch = useRef(true);
+
+  useEffect(() => {
+    isInitialFetch.current = true;
+  }, [productId]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -108,7 +117,10 @@ const ProductDetail = () => {
 
     const fetchProductDetails = async () => {
       try {
-        setLoading(true);
+        if (isInitialFetch.current) {
+          setLoading(true);
+          isInitialFetch.current = false;
+        }
         const data = await handlegetProductById(productId);
         if (isMounted) {
           setProduct(data);
@@ -133,10 +145,19 @@ const ProductDetail = () => {
     };
     fetchCartData();
 
+    const fetchWishlist = async () => {
+      try {
+        await handleGetWishlist();
+      } catch (err) {
+        // Silently fail if user is not authenticated
+      }
+    };
+    fetchWishlist();
+
     return () => {
       isMounted = false;
     };
-  }, [productId, handlegetProductById]);
+  }, [productId, handlegetProductById, cartCount]);
 
   console.log(product, "product");
   // Demo fallback product with all required details
@@ -230,7 +251,7 @@ const ProductDetail = () => {
 
   const currentStock = (activeVariant && typeof activeVariant.stock === "number")
     ? activeVariant.stock
-    : (displayProduct.stock !== undefined ? displayProduct.stock : 10);
+    : (displayProduct.stock !== undefined ? displayProduct.stock : 0);
 
   // Safe checks to prevent runtime errors on variant image list
   const productImages = currentImages && currentImages.length > 0
@@ -344,6 +365,26 @@ const ProductDetail = () => {
                   <span className="cart-badge">{cartCount}</span>
                 </button>
               )}
+              {!isSeller && (
+                <button
+                  onClick={() => navigate("/wishlist")}
+                  className="action-icon-link"
+                  title="View Wishlist"
+                  style={{ fontSize: "20px", color: "inherit" }}
+                >
+                  <i className="ri-heart-line"></i>
+                </button>
+              )}
+              {!isSeller && (
+                <button
+                  onClick={() => navigate("/orders")}
+                  className="action-icon-link"
+                  title="View Orders"
+                  style={{ fontSize: "20px", color: "inherit" }}
+                >
+                  <i className="ri-file-list-3-line"></i>
+                </button>
+              )}
               <Link to="/login" className="action-icon-link">
                 <i className="ri-user-line"></i>
               </Link>
@@ -373,6 +414,18 @@ const ProductDetail = () => {
                 <button onClick={() => { setMobileMenuOpen(false); navigate("/cart"); }} className="mobile-action-item">
                   <i className="ri-shopping-cart-2-line"></i>
                   <span>Cart ({cartCount})</span>
+                </button>
+              )}
+              {!isSeller && (
+                <button onClick={() => { setMobileMenuOpen(false); navigate("/wishlist"); }} className="mobile-action-item">
+                  <i className="ri-heart-line"></i>
+                  <span>Wishlist</span>
+                </button>
+              )}
+              {!isSeller && (
+                <button onClick={() => { setMobileMenuOpen(false); navigate("/orders"); }} className="mobile-action-item">
+                  <i className="ri-file-list-3-line"></i>
+                  <span>Orders</span>
                 </button>
               )}
               <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mobile-action-item">
@@ -494,15 +547,41 @@ const ProductDetail = () => {
                   )}
                 </div>
                 
-                {/* Stock Status Indicator */}
-                <div className="stock-indicator" style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "0.8rem", marginTop: "4px" }}>
-                  {currentStock <= 0 ? (
-                    <span style={{ color: "#F87171", fontWeight: "600" }}>● Out of Stock</span>
-                  ) : currentStock <= 5 ? (
-                    <span style={{ color: "#FBBF24", fontWeight: "600" }}>● Only {currentStock} left in stock!</span>
-                  ) : (
-                    <span style={{ color: "#4ADE80", fontWeight: "600" }}>● In Stock ({currentStock} available)</span>
-                  )}
+                {/* Visual Urgency Meter / Stock Progress Bar */}
+                <div className="stock-urgency-wrapper" style={{ marginTop: "8px", width: "100%", maxWidth: "320px" }}>
+                  <div className="stock-indicator" style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "0.85rem", marginBottom: "4px" }}>
+                    {currentStock <= 0 ? (
+                      <span style={{ color: "#EF4444", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>error</span>
+                        Out of Stock
+                      </span>
+                    ) : currentStock <= 5 ? (
+                      <span style={{ color: "#F59E0B", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: "16px", animation: "pulse 1.5s infinite" }}>local_fire_department</span>
+                        Hurry! Only {currentStock} left in stock - selling fast!
+                      </span>
+                    ) : (
+                      <span style={{ color: "#10B981", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>check_circle</span>
+                        In Stock ({currentStock} items ready to ship)
+                      </span>
+                    )}
+                  </div>
+                  <div className="stock-bar-bg" style={{
+                    width: "100%",
+                    height: "6px",
+                    background: "rgba(0,0,0,0.08)",
+                    borderRadius: "3px",
+                    overflow: "hidden"
+                  }}>
+                    <div className="stock-bar-fill" style={{
+                      width: currentStock <= 0 ? "0%" : (currentStock <= 5 ? `${(currentStock / 5) * 50}%` : "100%"),
+                      height: "100%",
+                      background: currentStock <= 0 ? "transparent" : (currentStock <= 5 ? "#F59E0B" : "#10B981"),
+                      borderRadius: "3px",
+                      transition: "width 0.4s ease"
+                    }} />
+                  </div>
                 </div>
               </div>
               
@@ -555,44 +634,87 @@ const ProductDetail = () => {
                         };
                         const hex = colorHexMap[option.toLowerCase().replace(/\s/g, "")] || null;
 
+                        // Find variant for this specific option
+                        const getOptionVariant = (optValue) => {
+                          if (!displayProduct.variants) return null;
+                          const targetAttrs = { ...selectedAttributes, [key]: optValue };
+                          return displayProduct.variants.find((v) => {
+                            if (!v.attributes) return false;
+                            return Object.entries(targetAttrs).every(([k, val]) => {
+                              return String(v.attributes[k]).toLowerCase() === String(val).toLowerCase();
+                            });
+                          });
+                        };
+                        
+                        const optionVariant = getOptionVariant(option);
+                        const optionStock = optionVariant ? optionVariant.stock : (displayProduct.stock !== undefined ? displayProduct.stock : 10);
+                        const isOptionOutOfStock = optionStock <= 0;
+                        const isLowStock = optionStock > 0 && optionStock <= 3;
+
                         if (isColorKey && hex) {
                           return (
                             <button
                               key={option}
-                              className={`swatch ${isActive ? "active" : ""}`}
+                              className={`swatch ${isActive ? "active" : ""} ${isOptionOutOfStock ? "out-of-stock" : ""}`}
                               style={{ 
                                 backgroundColor: hex,
                                 width: "34px",
                                 height: "34px",
                                 borderRadius: "50%",
                                 border: isActive ? "2.5px solid var(--theme-text)" : "1px solid var(--theme-border)",
-                                cursor: "pointer",
-                                outline: "none"
+                                cursor: isOptionOutOfStock ? "not-allowed" : "pointer",
+                                opacity: isOptionOutOfStock ? 0.35 : 1,
+                                outline: "none",
+                                position: "relative"
                               }}
-                              onClick={() => setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
-                              title={option}
-                            />
+                              onClick={() => !isOptionOutOfStock && setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
+                              title={isOptionOutOfStock ? `${option} (Out of Stock)` : (isLowStock ? `${option} (Only ${optionStock} left!)` : option)}
+                            >
+                              {isOptionOutOfStock && (
+                                <div style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  width: '100%',
+                                  height: '2px',
+                                  background: '#ef4444',
+                                  transform: 'translate(-50%, -50%) rotate(45deg)'
+                                }} />
+                              )}
+                            </button>
                           );
                         }
 
                         return (
                           <button
                             key={option}
-                            className={`size-btn ${isActive ? "active" : ""}`}
-                            onClick={() => setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
+                            className={`size-btn ${isActive ? "active" : ""} ${isOptionOutOfStock ? "out-of-stock" : ""}`}
+                            onClick={() => !isOptionOutOfStock && setSelectedAttributes(prev => ({ ...prev, [key]: option }))}
                             style={{
                               padding: "6px 14px",
                               borderRadius: "4px",
-                              cursor: "pointer",
+                              cursor: isOptionOutOfStock ? "not-allowed" : "pointer",
                               fontSize: "0.8rem",
                               textTransform: "uppercase",
-                              width: "auto",
-                              height: "auto",
-                              minWidth: "48px",
-                              minHeight: "36px"
+                              position: "relative",
+                              opacity: isOptionOutOfStock ? 0.35 : 1,
+                              textDecoration: isOptionOutOfStock ? "line-through" : "none",
+                              border: isActive ? "2px solid var(--accent-primary, #ff6b00)" : (isLowStock ? "1px dashed #F59E0B" : "1px solid var(--theme-border)")
                             }}
+                            title={isOptionOutOfStock ? "Out of stock" : (isLowStock ? `Only ${optionStock} left!` : `${optionStock} in stock`)}
                           >
                             {option}
+                            {isLowStock && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '-3px',
+                                right: '-3px',
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: '#F59E0B'
+                              }} />
+                            )}
                           </button>
                         );
                       })}
@@ -609,22 +731,40 @@ const ProductDetail = () => {
                 <div className="attribute-options-row" style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "8px" }}>
                   {productSizes.map((size) => {
                     const isActive = selectedSize === size;
+                    const isSizeOut = currentStock <= 0;
+                    const isSizeLow = currentStock > 0 && currentStock <= 3;
                     return (
                       <button
                         key={size}
-                        className={`size-btn ${isActive ? "active" : ""}`}
-                        onClick={() => setSelectedSize(size)}
+                        className={`size-btn ${isActive ? "active" : ""} ${isSizeOut ? "out-of-stock" : ""}`}
+                        onClick={() => !isSizeOut && setSelectedSize(size)}
                         style={{
                           padding: "6px 14px",
                           borderRadius: "4px",
-                          cursor: "pointer",
+                          cursor: isSizeOut ? "not-allowed" : "pointer",
                           fontSize: "0.8rem",
                           textTransform: "uppercase",
                           minWidth: "48px",
-                          minHeight: "36px"
+                          minHeight: "36px",
+                          position: "relative",
+                          opacity: isSizeOut ? 0.35 : 1,
+                          textDecoration: isSizeOut ? "line-through" : "none",
+                          border: isActive ? "2px solid var(--accent-primary, #ff6b00)" : (isSizeLow ? "1px dashed #F59E0B" : "1px solid var(--theme-border)")
                         }}
+                        title={isSizeOut ? "Out of stock" : (isSizeLow ? `Only ${currentStock} left!` : `${currentStock} in stock`)}
                       >
                         {size}
+                        {isSizeLow && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '-3px',
+                            right: '-3px',
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            backgroundColor: '#F59E0B'
+                          }} />
+                        )}
                       </button>
                     );
                   })}
@@ -648,7 +788,26 @@ const ProductDetail = () => {
               >
                 BUY NOW
               </button>
-              <button className="btn-heart">♡</button>
+              <button
+                className={`btn-heart${isWishlisted(product?._id || displayProduct?._id) ? " wishlisted" : ""}`}
+                onClick={async () => {
+                  const pId = product?._id || displayProduct?._id;
+                  if (!pId) return;
+                  setWishlistLoading(true);
+                  try {
+                    await handleToggleWishlist(pId);
+                  } catch (err) {
+                    console.error("Wishlist toggle failed:", err);
+                  } finally {
+                    setWishlistLoading(false);
+                  }
+                }}
+                disabled={wishlistLoading}
+                title={isWishlisted(product?._id || displayProduct?._id) ? "Remove from wishlist" : "Add to wishlist"}
+                aria-label={isWishlisted(product?._id || displayProduct?._id) ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                {isWishlisted(product?._id || displayProduct?._id) ? "♥" : "♡"}
+              </button>
             </div>
 
             {/* Shipping, Returns & Authenticity Details */}

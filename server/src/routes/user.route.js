@@ -1,6 +1,7 @@
 import express from 'express'
 import { validateLoginUser, validateRegisterUser } from '../validator/auth.validator.js'
 import { register,login, googleCallback,getMe } from '../controller/auth.controller.js'
+import { getAddresses, addAddress, deleteAddress, setDefaultAddress } from '../controller/address.controller.js'
 import passport from 'passport'
 import { config } from '../config/config.js'
 const userRouter=express.Router()
@@ -20,4 +21,11 @@ userRouter.get('/google/callback',
     googleCallback
 )
 userRouter.get("/me",verifyUser,getMe)
+
+// Saved Addresses routes
+userRouter.get("/addresses", verifyUser, getAddresses)
+userRouter.post("/addresses", verifyUser, addAddress)
+userRouter.delete("/addresses/:addressId", verifyUser, deleteAddress)
+userRouter.patch("/addresses/:addressId/default", verifyUser, setDefaultAddress)
+
 export default userRouter

@@ -1,0 +1,437 @@
+// Order Success — Antigravity Design System
+// Aesthetic archetype: Euphoric — celebration moment, bold success, radial glow
+// Tokens inherited from Cart.scss :root (same page context)
+// Unforgettable detail: SVG checkmark stroke-dashoffset animation + radial burst
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+// ── ADDITIONAL KEYFRAMES ─────────────────────────────────────────────────────
+
+@keyframes ag-rise {
+  from { opacity: 0; transform: translateY(16px); filter: blur(2px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+}
+
+@keyframes ag-scale {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ag-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+// The unforgettable detail: SVG checkmark draws itself
+@keyframes check-draw {
+  from { stroke-dashoffset: 80; }
+  to   { stroke-dashoffset: 0; }
+}
+
+// Radial burst — glow ring expanding outward on success
+@keyframes burst-ring {
+  0%   { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+// Gentle pulse on the icon badge
+@keyframes success-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50%       { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+}
+
+// Shimmer sweep across the order ID pill
+@keyframes shimmer-sweep {
+  from { background-position: -300px 0; }
+  to   { background-position: 300px 0; }
+}
+
+// Floating confetti-dot particles
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(80px)  rotate(360deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// ── ORDER SUCCESS PAGE ───────────────────────────────────────────────────────
+
+.order-success {
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--fg-primary);
+  // Override font tokens for this page scope — Cormorant Garamond + Inter
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-text:    'Inter', system-ui, sans-serif;
+  font-family: var(--font-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-12);
+  padding-inline: clamp(var(--space-4), 4vw, var(--space-12));
+  position: relative;
+  overflow: hidden;
+
+  // Ambient background radial — sets the euphoric mood
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 30%,
+      rgba(16, 185, 129, 0.07) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &__container {
+    width: 100%;
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+    animation: ag-rise var(--dur-slow) var(--ease-out) both;
+  }
+}
+
+// ── ICON BADGE ───────────────────────────────────────────────────────────────
+
+.success-badge {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ag-scale 500ms var(--ease-spring) 100ms both;
+
+  // Expanding burst rings — layered for depth
+  &__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-success);
+    opacity: 0;
+    animation: burst-ring 800ms var(--ease-out) 400ms forwards;
+
+    &--delay {
+      animation-delay: 600ms;
+    }
+  }
+
+  &__circle {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background: var(--bg-success);
+    border: 2px solid var(--color-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: success-pulse 2.5s ease-in-out 1200ms infinite;
+    position: relative;
+    z-index: 1;
+  }
+
+  // SVG checkmark — the unforgettable detail
+  &__check {
+    width: 36px;
+    height: 36px;
+    overflow: visible;
+
+    .check-path {
+      stroke: var(--color-success);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      stroke-dasharray: 80;
+      stroke-dashoffset: 80;
+      animation: check-draw 500ms var(--ease-spring) 700ms forwards;
+    }
+  }
+}
+
+// ── CONTENT CARD ─────────────────────────────────────────────────────────────
+
+.success-card {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-10) var(--space-8);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-6);
+  animation: ag-rise 500ms var(--ease-out) 200ms both;
+
+  @media (max-width: 479px) {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  &__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-success);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    background: var(--bg-success);
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    animation: ag-rise 400ms var(--ease-out) 350ms both;
+  }
+
+  &__title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: var(--text-4xl);      // Garamond earns more scale — serifs need room
+    font-weight: 600;                 // SemiBold is the sweet spot for Cormorant
+    font-style: italic;               // Italic Garamond = peak luxury fashion
+    color: var(--fg-primary);
+    letter-spacing: -0.01em;         // Tighter than sans — serifs have natural spacing
+    line-height: 1.0;
+    animation: ag-rise 400ms var(--ease-out) 450ms both;
+  }
+
+  &__subtitle {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    line-height: 1.7;
+    max-width: 360px;
+    font-weight: 400;
+    animation: ag-rise 400ms var(--ease-out) 550ms both;
+  }
+
+  &__divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border-subtle);
+    animation: ag-rise 300ms var(--ease-out) 600ms both;
+  }
+}
+
+// ── ORDER ID PILL ────────────────────────────────────────────────────────────
+
+.order-id-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  animation: ag-rise 400ms var(--ease-out) 650ms both;
+
+  &__label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--fg-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  &__value {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--fg-primary);
+    background: var(--bg-base);
+    border: 1px solid var(--border-moderate);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    letter-spacing: 0.04em;
+    word-break: break-all;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+
+    // Shimmer sweep — makes it feel premium
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 100%
+      );
+      background-size: 300px 100%;
+      animation: shimmer-sweep 2.5s ease-in-out 1.2s 2;
+    }
+  }
+}
+
+// ── INFO ROWS ────────────────────────────────────────────────────────────────
+
+.success-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: ag-rise 400ms var(--ease-out) 700ms both;
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--text-sm);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border-subtle);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__key {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--fg-secondary);
+    font-weight: 500;
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  &__val {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--fg-primary);
+    font-size: var(--text-xs);
+
+    &--success {
+      color: var(--color-success);
+      background: var(--bg-success);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+    }
+  }
+}
+
+// ── CTA BUTTONS ──────────────────────────────────────────────────────────────
+
+.success-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: ag-rise 400ms var(--ease-out) 800ms both;
+
+  @media (min-width: 480px) {
+    flex-direction: row;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: 52px;
+    padding: 0 var(--space-8);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: var(--text-sm);
+    font-weight: 500;                // Inter looks best at medium weight for CTAs
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all var(--dur-base) var(--ease-default);
+    text-decoration: none;
+    user-select: none;
+    flex: 1;
+    white-space: nowrap;
+
+    &:active { transform: scale(0.97); }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-primary);
+      outline-offset: 2px;
+    }
+
+    &--primary {
+      background: var(--accent-primary);
+      color: var(--fg-inverted);
+      box-shadow: 0 4px 12px var(--accent-glow);
+
+      &:hover {
+        background: var(--accent-hover);
+        box-shadow: 0 6px 20px var(--accent-glow);
+        transform: translateY(-1px);
+      }
+    }
+
+    &--secondary {
+      background: var(--bg-surface);
+      color: var(--fg-primary);
+      border: 1px solid var(--border-moderate);
+      backdrop-filter: blur(12px);
+
+      &:hover {
+        background: var(--bg-elevated);
+        border-color: var(--border-strong);
+      }
+    }
+  }
+}
+
+// ── CONFETTI PARTICLES ───────────────────────────────────────────────────────
+// Purely decorative — CSS-only, no JS needed
+
+.confetti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+
+  &__dot {
+    position: absolute;
+    top: -10px;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    animation: confetti-fall 1.8s var(--ease-out) forwards;
+
+    &:nth-child(1)  { left: 10%;  background: var(--accent-primary);  animation-delay: 300ms;  width: 6px;  height: 6px; }
+    &:nth-child(2)  { left: 20%;  background: var(--color-success);   animation-delay: 450ms;  width: 10px; height: 10px; border-radius: var(--radius-full); }
+    &:nth-child(3)  { left: 30%;  background: var(--color-warning);   animation-delay: 200ms;  }
+    &:nth-child(4)  { left: 42%;  background: var(--accent-primary);  animation-delay: 600ms;  width: 5px;  height: 12px; }
+    &:nth-child(5)  { left: 55%;  background: var(--color-success);   animation-delay: 350ms;  width: 12px; height: 5px; }
+    &:nth-child(6)  { left: 65%;  background: var(--color-info);      animation-delay: 500ms;  border-radius: var(--radius-full); }
+    &:nth-child(7)  { left: 75%;  background: var(--accent-primary);  animation-delay: 150ms;  width: 10px; height: 10px; border-radius: var(--radius-full); }
+    &:nth-child(8)  { left: 85%;  background: var(--color-warning);   animation-delay: 700ms;  width: 6px;  height: 6px; }
+    &:nth-child(9)  { left: 93%;  background: var(--color-success);   animation-delay: 400ms;  }
+    &:nth-child(10) { left: 48%;  background: var(--color-info);      animation-delay: 250ms;  width: 7px;  height: 14px; }
+  }
+}
+
+// ── DARK MODE OVERRIDES ───────────────────────────────────────────────────────
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    .order-id-block__value::after {
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.04) 50%,
+        transparent 100%
+      );
+    }
+  }
+}

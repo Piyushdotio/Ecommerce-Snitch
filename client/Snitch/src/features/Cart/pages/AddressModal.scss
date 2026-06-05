@@ -1,0 +1,461 @@
+// Address Modal stylesheet — Antigravity Design System
+// Design Tokens align with Cart.scss
+
+.address-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background: var(--bg-overlay);
+  backdrop-filter: var(--blur-glass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fadeIn 0.25s var(--ease-out);
+}
+
+.address-modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-moderate);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s var(--ease-spring);
+  color: var(--fg-primary);
+
+  &__header {
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__close-btn {
+    background: transparent;
+    border: none;
+    color: var(--fg-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
+    transition: all var(--dur-fast) var(--ease-default);
+
+    &:hover {
+      background: var(--border-subtle);
+      color: var(--fg-primary);
+    }
+  }
+
+  &__error {
+    background: var(--bg-danger);
+    border-left: 4px solid var(--color-danger);
+    color: var(--color-danger);
+    padding: var(--space-3) var(--space-4);
+    margin: var(--space-4) var(--space-6) 0 var(--space-6);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+
+    span {
+      font-size: var(--text-md);
+      margin-top: 1px;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+
+  &__body {
+    padding: var(--space-6);
+    overflow-y: auto;
+    flex: 1;
+
+    // Custom Scrollbar
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: var(--radius-full);
+    }
+  }
+
+  &__footer {
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-4);
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  &__skeleton-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+
+// Skeleton Loader
+.address-skeleton-card {
+  height: 120px;
+  background: linear-gradient(90deg, var(--border-subtle) 25%, var(--border-moderate) 50%, var(--border-subtle) 75%);
+  background-size: 200% 100%;
+  animation: loadingShimmer 1.5s infinite;
+  border-radius: var(--radius-lg);
+}
+
+// Address Cards List
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  &__subtitle {
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    margin: 0 0 var(--space-2) 0;
+    font-weight: 500;
+  }
+}
+
+.address-card {
+  border: 1.5px solid var(--border-moderate);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  gap: var(--space-4);
+  cursor: pointer;
+  background: var(--bg-surface);
+  transition: all var(--dur-base) var(--ease-default);
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-elevated);
+    transform: translateY(-1px);
+  }
+
+  &--selected {
+    border-color: var(--accent-primary) !important;
+    background: var(--accent-subtle);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  &__radio {
+    display: flex;
+    align-items: flex-start;
+    margin-top: 2px;
+
+    .radio-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: var(--radius-full);
+      border: 2px solid var(--fg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--dur-fast) var(--ease-default);
+
+      &::after {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: var(--radius-full);
+        background: transparent;
+        transform: scale(0);
+        transition: all var(--dur-fast) var(--ease-spring);
+      }
+
+      &--active {
+        border-color: var(--accent-primary);
+        &::after {
+          background: var(--accent-primary);
+          transform: scale(1);
+        }
+      }
+    }
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__header-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: var(--text-base);
+  }
+
+  &__badge {
+    background: var(--accent-subtle);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-glow);
+    font-size: var(--text-xs);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+
+  &__details {
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  &__phone {
+    font-size: var(--text-sm);
+    color: var(--fg-secondary);
+    font-weight: 500;
+  }
+
+  &__actions {
+    display: flex;
+    gap: var(--space-4);
+    margin-top: var(--space-3);
+  }
+
+  &__action-btn {
+    background: transparent;
+    border: none;
+    color: var(--fg-secondary);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    transition: color var(--dur-fast) var(--ease-default);
+
+    &:hover {
+      color: var(--fg-primary);
+    }
+
+    &--danger {
+      color: var(--color-danger);
+      opacity: 0.8;
+
+      &:hover {
+        color: var(--color-danger);
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// Add New Trigger Button
+.add-new-trigger {
+  width: 100%;
+  padding: var(--space-4);
+  border: 1.5px dashed var(--border-moderate);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--fg-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  margin-top: var(--space-5);
+  transition: all var(--dur-base) var(--ease-default);
+
+  span {
+    font-size: var(--text-md);
+  }
+
+  &:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: var(--accent-subtle);
+  }
+}
+
+// Form Styling
+.address-form {
+  animation: fadeIn 0.3s var(--ease-out);
+
+  &__title {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 700;
+    margin: 0 0 var(--space-5) 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    &--full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--fg-secondary);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    input {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-moderate);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      color: var(--fg-primary);
+      font-family: var(--font-text);
+      font-size: var(--text-sm);
+      transition: all var(--dur-base) var(--ease-default);
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 2px var(--accent-glow);
+        background: var(--bg-elevated);
+      }
+    }
+  }
+
+  .form-options {
+    margin-top: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--fg-secondary);
+      cursor: pointer;
+      font-weight: 500;
+
+      input[type="checkbox"] {
+        accent-color: var(--accent-primary);
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .form-actions {
+    margin-top: var(--space-6);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-4);
+  }
+}
+
+// Common button tokens (fallbacks if the main css isn't present)
+.btn {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--dur-base) var(--ease-default);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &-primary {
+    background: var(--accent-primary);
+    color: var(--fg-inverted);
+    border: 1px solid var(--accent-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+  }
+
+  &-secondary {
+    background: transparent;
+    color: var(--fg-secondary);
+    border: 1px solid var(--border-moderate);
+
+    &:hover:not(:disabled) {
+      background: var(--border-subtle);
+      color: var(--fg-primary);
+      border-color: var(--border-strong);
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes loadingShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

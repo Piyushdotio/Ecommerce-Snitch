@@ -3,7 +3,7 @@ import productModel from "../models/product.model.js";
 import { fileupload } from "../services/storage.service.js";
 
 export const uploadproductController = async (req, res) => {
-  const { title, description, priceAmount, priceCurrency } = req.body;
+  const { title, description, priceAmount, priceCurrency, category, stock, sizeStocks } = req.body;
   const seller = req.user;
   const files = req.files || [];
 
@@ -21,6 +21,34 @@ export const uploadproductController = async (req, res) => {
     }),
   );
 
+  let sizeStocksMap = {};
+  if (sizeStocks) {
+    try {
+      sizeStocksMap = JSON.parse(sizeStocks);
+    } catch (err) {
+      console.error("sizeStocks parsing error:", err);
+    }
+  }
+
+  const variantsToCreate = [];
+  const hasVariants = Object.keys(sizeStocksMap).length > 0;
+
+  if (hasVariants) {
+    Object.entries(sizeStocksMap).forEach(([size, sizeStock]) => {
+      variantsToCreate.push({
+        stock: Number(sizeStock || 0),
+        price: {
+          amount: Number(priceAmount),
+          currency: priceCurrency || "INR",
+        },
+        attributes: {
+          size: size
+        },
+        images: uploadedImages.map(img => ({ url: img.url }))
+      });
+    });
+  }
+
   const product = await productModel.create({
     title,
     description,
@@ -28,7 +56,10 @@ export const uploadproductController = async (req, res) => {
       amount: Number(priceAmount),
       currency: priceCurrency || "INR",
     },
+    category: category || "Shirts",
+    stock: hasVariants ? 0 : Number(stock || 0),
     images: uploadedImages,
+    variants: variantsToCreate,
     seller: seller._id,
   });
 

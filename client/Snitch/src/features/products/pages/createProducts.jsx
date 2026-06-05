@@ -13,8 +13,11 @@ const CreateProducts = () => {
   const { theme, toggleTheme } = useTheme();
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
+  const [sizeStocks, setSizeStocks] = useState({});
   const [colors, setColors] = useState(['#ff6b00', '#000000', '#ffffff']);
   const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('Shirts');
+  const [stock, setStock] = useState('10');
   const [priceAmount, setPriceAmount] = useState('');
   const [priceCurrency, setPriceCurrency] = useState('INR');
   const [description, setDescription] = useState('');
@@ -54,9 +57,25 @@ const CreateProducts = () => {
   const toggleSize = (size) => {
     if (selectedSizes.includes(size)) {
       setSelectedSizes(selectedSizes.filter(s => s !== size));
+      setSizeStocks(prev => {
+        const copy = { ...prev };
+        delete copy[size];
+        return copy;
+      });
     } else {
       setSelectedSizes([...selectedSizes, size]);
+      setSizeStocks(prev => ({
+        ...prev,
+        [size]: '10'
+      }));
     }
+  };
+
+  const handleSizeStockChange = (size, value) => {
+    setSizeStocks(prev => ({
+      ...prev,
+      [size]: value
+    }));
   };
 
   const addColor = (e) => {
@@ -87,11 +106,14 @@ const CreateProducts = () => {
 
   const resetForm = () => {
     setTitle('');
+    setCategory('Shirts');
+    setStock('10');
     setPriceAmount('');
     setPriceCurrency('INR');
     setDescription('');
     setSelectedImages([]);
     setSelectedSizes([]);
+    setSizeStocks({});
     setColors(['#ff6b00', '#000000', '#ffffff']);
   };
 
@@ -111,6 +133,14 @@ const CreateProducts = () => {
       formData.append('description', description);
       formData.append('priceAmount', priceAmount);
       formData.append('priceCurrency', priceCurrency);
+      formData.append('category', category);
+      
+      if (selectedSizes.length > 0) {
+        formData.append('sizeStocks', JSON.stringify(sizeStocks));
+        formData.append('stock', '0');
+      } else {
+        formData.append('stock', stock);
+      }
 
       selectedImages.forEach((image) => {
         formData.append('images', image.file);
@@ -225,7 +255,39 @@ const CreateProducts = () => {
                 />
               </div>
 
-              <div className="form-grid-small">
+              <div className="form-group">
+                <label htmlFor="category">Category</label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color, #e2e8f0)',
+                    background: 'var(--input-bg, #fff)',
+                    color: 'var(--text-color, #0f172a)',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <option value="Shirts">Shirts</option>
+                  <option value="Trousers">Trousers</option>
+                  <option value="Polos">Polos</option>
+                  <option value="Jeans">Jeans</option>
+                  <option value="Cargos">Cargos</option>
+                  <option value="T-Shirts">T-Shirts</option>
+                  <option value="Shorts">Shorts</option>
+                  <option value="Plus Size">Plus Size</option>
+                  <option value="Shoes">Shoes</option>
+                </select>
+              </div>
+
+              <div className="form-grid-small" style={{ display: 'grid', gridTemplateColumns: selectedSizes.length === 0 ? '1fr 1fr 1fr' : '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label htmlFor="price">Price ($)</label>
                   <input
@@ -254,6 +316,21 @@ const CreateProducts = () => {
                     <option value="JPY">JPY</option>
                   </select>
                 </div>
+
+                {selectedSizes.length === 0 && (
+                  <div className="form-group">
+                    <label htmlFor="stock">Stock Qty</label>
+                    <input
+                      type="number"
+                      id="stock"
+                      placeholder="10"
+                      value={stock}
+                      onChange={(e) => setStock(e.target.value)}
+                      min="0"
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
@@ -270,6 +347,25 @@ const CreateProducts = () => {
                   ))}
                 </div>
               </div>
+
+              {selectedSizes.length > 0 && (
+                <div className="size-stocks-input-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '12px', padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', borderRadius: '8px', marginBottom: '20px' }}>
+                  {selectedSizes.map(size => (
+                    <div key={size} className="size-stock-item" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--fg-secondary)', fontWeight: '600' }}>Size {size} Stock</label>
+                      <input
+                        type="number"
+                        placeholder="Qty"
+                        value={sizeStocks[size] || ''}
+                        onChange={(e) => handleSizeStockChange(size, e.target.value)}
+                        min="0"
+                        style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', color: 'var(--fg-primary)' }}
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Product Colors</label>

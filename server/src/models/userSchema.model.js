@@ -22,7 +22,17 @@ const userSchema = new mongoose.Schema({
   fullname:{type:String,required:true},
   googleId:{
     type:String
-  }
+  },
+  addresses: [{
+    fullname: { type: String, required: true },
+    phone: { type: String, required: true },
+    line1: { type: String, required: true },
+    line2: { type: String },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
+  }]
 });
 
 userSchema.pre("save",async function(){

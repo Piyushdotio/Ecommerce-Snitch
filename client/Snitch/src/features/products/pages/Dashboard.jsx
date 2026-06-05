@@ -69,6 +69,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // newest | price-asc | price-desc | name-asc | name-desc
   const [currencyFilter, setCurrencyFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [deletedProductIds, setDeletedProductIds] = useState([]);
 
   useEffect(() => {
@@ -123,7 +124,10 @@ const Dashboard = () => {
     const productCurrency = product.price?.currency || "INR";
     const matchesCurrency = currencyFilter === "all" || productCurrency === currencyFilter;
 
-    return matchesSearch && matchesCurrency;
+    const productCategory = product.category || "Shirts";
+    const matchesCategory = categoryFilter === "all" || productCategory.toLowerCase() === categoryFilter.toLowerCase();
+
+    return matchesSearch && matchesCurrency && matchesCategory;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -261,6 +265,24 @@ const Dashboard = () => {
 
             <select
               className="select-filter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              aria-label="Filter by Category"
+            >
+              <option value="all">All Categories</option>
+              <option value="Shirts">Shirts</option>
+              <option value="Trousers">Trousers</option>
+              <option value="Polos">Polos</option>
+              <option value="Jeans">Jeans</option>
+              <option value="Cargos">Cargos</option>
+              <option value="T-Shirts">T-Shirts</option>
+              <option value="Shorts">Shorts</option>
+              <option value="Plus Size">Plus Size</option>
+              <option value="Shoes">Shoes</option>
+            </select>
+
+            <select
+              className="select-filter"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               aria-label="Sort products"
@@ -353,6 +375,21 @@ const Dashboard = () => {
                           {formatPrice(product.price?.amount || 0, product.price?.currency || "INR")}
                         </span>
                       </div>
+                      <div className="product-category-row" style={{ marginBottom: '6px' }}>
+                        <span className="product-category-badge" style={{
+                          background: 'rgba(255, 107, 0, 0.12)',
+                          color: '#ff6b00',
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          fontWeight: '600',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          display: 'inline-block',
+                          fontFamily: 'var(--font-mono, monospace)'
+                        }}>
+                          {product.category || "Shirts"}
+                        </span>
+                      </div>
                       <p className="product-desc">{product.description}</p>
                       <div className="product-meta">
                         <span className="meta-date">{formattedDate}</span>
@@ -376,6 +413,7 @@ const Dashboard = () => {
                   <tr>
                     <th scope="col" className="thumbnail-cell">Item</th>
                     <th scope="col">Product Info</th>
+                    <th scope="col">Category</th>
                     <th scope="col">Price</th>
                     <th scope="col">Available Sizes</th>
                     <th scope="col">Added On</th>
@@ -409,6 +447,9 @@ const Dashboard = () => {
                           <div className="desc-tip" title={product.description}>
                             {product.description}
                           </div>
+                        </td>
+                        <td className="category-cell" style={{ fontSize: '13px', fontWeight: '500', color: 'var(--fg-secondary)' }}>
+                          {product.category || "Shirts"}
                         </td>
                         <td className="price-cell">
                           {formatPrice(product.price?.amount || 0, product.price?.currency || "INR")}

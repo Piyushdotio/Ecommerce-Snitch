@@ -50,6 +50,7 @@ const SellerProductDetails = () => {
    * - status: Product listing status (e.g., 'active' or 'draft')
    */
   const [productTitle, setProductTitle] = useState("");
+  const [productCategory, setProductCategory] = useState("Shirts");
   const [basePrice, setBasePrice] = useState("8999");
   const [skuCode, setSkuCode] = useState("SN-BLZ-ARCH");
   const [status, setStatus] = useState("active");
@@ -184,6 +185,7 @@ const SellerProductDetails = () => {
         if (!ignore && data) {
           const prod = data.product || data;
           setProductTitle(prod.title || "Product Name");
+          setProductCategory(prod.category || "Shirts");
           setBasePrice(prod.price?.amount || "8999");
           setSkuCode(prod._id ? `SN-BLZ-${prod._id.slice(-6).toUpperCase()}` : "SN-BLZ-ARCH");
           
@@ -531,6 +533,9 @@ const SellerProductDetails = () => {
           <h2>{productTitle || "Architect Blazer"}</h2>
           <div className="status-row">
             <span className="status-badge-sku">{skuCode}</span>
+            <span className="status-badge-sku" style={{ marginLeft: '8px', textTransform: 'uppercase', fontSize: '11px', background: 'rgba(255, 107, 0, 0.12)', color: '#ff6b00' }}>
+              Category: {productCategory}
+            </span>
             <div className="status-dropdown-container">
               <button 
                 className={`status-dropdown-trigger ${status}`} 

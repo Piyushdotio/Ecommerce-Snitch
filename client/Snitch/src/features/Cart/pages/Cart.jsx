@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import { useCart } from "../hook/useCart"
 import { useSelector } from "react-redux"
-import { Link } from "react-router-dom"
+import { Link,useNavigate } from "react-router-dom"
+import {useRazorpay} from "react-razorpay"
+import AddressModal from "./AddressModal"
 import "./Cart.scss"
 
 const Cart = () => {
+  const navigate=useNavigate()
   const items = useSelector((state) => state.cart.items || [])
-  const { handleGetCart, handleAddItem, handleRemoveItem, handleUpdateItem } = useCart()
+  const validItems = items.filter((item) => item?.product?._id)
+  const { handleGetCart, handleAddItem, handleRemoveItem, handleUpdateItem, handleCreateOrder, handleVerifyPayment } = useCart()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [updatingItemId, setUpdatingItemId] = useState(null)
+  const [showAddressModal, setShowAddressModal] = useState(false)
+  const { error: razorpayLoadError, isLoading, Razorpay } = useRazorpay()
+  const user = useSelector(state => state.user || state.auth?.user)
+  const isCheckoutScriptReady =
+    typeof window !== "undefined" && typeof window.Razorpay === "function"
+  const isCheckoutLoading = isLoading && !isCheckoutScriptReady
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -24,6 +34,8 @@ const Cart = () => {
     }
     fetchCart()
   }, [])
+   
+
 
   const handleQtyChange = async (item, delta) => {
     const uniqueId = `${item.product._id}-${item.variant || ""}-${item.size || ""}`
@@ -37,6 +49,7 @@ const Cart = () => {
       })
     } catch (err) {
       console.error("Error updating quantity:", err)
+      alert(err.message || "Failed to update item quantity")
     } finally {
       setUpdatingItemId(null)
     }
@@ -55,6 +68,71 @@ const Cart = () => {
       console.error("Error removing item:", err)
     } finally {
       setUpdatingItemId(null)
+    }
+  }
+  
+  const handleCheckout = () => {
+    if (razorpayLoadError) {
+      setError(`Failed to load Razorpay: ${razorpayLoadError}`)
+      return
+    }
+
+    if (isCheckoutLoading) {
+      setError("Razorpay checkout is still loading. Please try again in a moment.")
+      return
+    }
+
+    setError(null)
+    setShowAddressModal(true)
+  }
+
+  const proceedToPayment = async (shippingAddress) => {
+    try {
+      setError(null)
+      const { order, keyId } = await handleCreateOrder(shippingAddress)
+      if (!keyId) {
+        throw new Error("Razorpay key was not returned by the server")
+      }
+
+      const options = {
+        key: keyId,
+        amount: order.amount, // Amount in paise
+        currency: order.currency,
+        name: "Snitch",
+        description: "Test Transaction",
+        order_id: order.id, // Generate order_id on server
+        handler: async (response) => {
+          try {
+            const isValid = await handleVerifyPayment(response)
+            if (isValid) {
+              navigate(`/order-success?order_id=${response.razorpay_order_id}`)
+            }
+          } catch (verifyError) {
+            setError(verifyError.message || "Payment succeeded but verification failed")
+          }
+        },
+        prefill: {
+          name: shippingAddress.fullname || user?.fullname,
+          email: user?.email,
+          contact: shippingAddress.phone || user?.contact,
+        },
+        theme: {
+          color: "#111827",
+        },
+        modal: {
+          ondismiss: () => {
+            setError("Payment popup closed before completing checkout")
+          },
+        },
+      };
+
+      const RazorpayConstructor = window.Razorpay || Razorpay
+      const razorpayInstance = new RazorpayConstructor(options);
+      razorpayInstance.open();
+      setShowAddressModal(false);
+    } catch (err) {
+      setError(err?.message || "Unable to start checkout")
+      throw err;
     }
   }
 
@@ -166,7 +244,7 @@ const Cart = () => {
   }
 
   // Helper: Get current size attribute value or item.size
-  const getItemSize = (item) => {
+  const _getItemSize = (item) => {
     if (item.size) return item.size
     if (!item.product || !item.variant) return null
     const variant = item.product.variants?.find(v => v._id === item.variant)
@@ -215,6 +293,7 @@ const Cart = () => {
       })
     } catch (err) {
       console.error("Error changing size:", err)
+      alert(err.message || "Failed to change size option")
     } finally {
       setUpdatingItemId(null)
     }
@@ -233,25 +312,26 @@ const Cart = () => {
       })
     } catch (err) {
       console.error("Error changing standalone size:", err)
+      alert(err.message || "Failed to change option size")
     } finally {
       setUpdatingItemId(null)
     }
   }
 
   // Calculations — use savedPrice (original) for subtotal display; currentPrice for alerts
-  const subtotal = items.reduce((acc, item) => {
+  const subtotal = validItems.reduce((acc, item) => {
     const price = item.savedPrice || item.price
     const amount = price?.amount || 0
     return acc + (amount * item.quantity)
   }, 0)
 
-  const currency = items[0]?.price?.currency || "INR"
+  const currency = validItems[0]?.price?.currency || "INR"
   const threshold = currency === "INR" ? 2000 : 30
   const shippingCost = subtotal >= threshold || subtotal === 0 ? 0 : (currency === "INR" ? 150 : 5)
   const progressFill = subtotal >= threshold ? 100 : (subtotal / threshold) * 100
   const amountNeededForFreeShipping = threshold - subtotal
 
-  const tax = 0
+  const _TAX = 0
   const total = subtotal + shippingCost
 
   if (loading) {
@@ -275,7 +355,7 @@ const Cart = () => {
     )
   }
 
-  if (items.length === 0) {
+  if (validItems.length === 0) {
     return (
       <div className="cart-page">
         <div className="cart-page__container">
@@ -307,14 +387,14 @@ const Cart = () => {
             </Link>
             <h1 className="cart-page__title" style={{ margin: 0 }}>Shopping Bag</h1>
           </div>
-          <span className="cart-page__count">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
+          <span className="cart-page__count">{validItems.length} {validItems.length === 1 ? 'item' : 'items'}</span>
         </header>
 
         <div className="cart-page__grid">
           
           {/* Cart Items List */}
           <main className="cart-page__items-list">
-            {items.map((item) => {
+            {validItems.map((item) => {
               const uniqueId = `${item.product._id}-${item.variant || ""}-${item.size || ""}`
               const isUpdating = updatingItemId === uniqueId
               
@@ -466,6 +546,11 @@ const Cart = () => {
           {/* Sticky Summary Sidebar */}
           <aside className="card summary-panel card--elevated">
             <h2 className="summary-panel__title">Order Summary</h2>
+            {error && (
+              <p className="cart-item__price-alert cart-item__price-alert--increase">
+                {error}
+              </p>
+            )}
 
             {/* Free Shipping tracker */}
             <div className="summary-panel__shipping-tracker">
@@ -505,8 +590,10 @@ const Cart = () => {
             </div>
 
             {/* CTA Buttons */}
-            <button className="btn btn-primary btn-lg summary-panel__checkout-btn">
-              Proceed to Checkout
+            <button onClick={handleCheckout}
+             className="btn btn-primary btn-lg summary-panel__checkout-btn"
+             disabled={isCheckoutLoading}>
+              {isCheckoutLoading ? "Loading Checkout..." : "Proceed to Checkout"}
             </button>
 
             <Link to="/" className="summary-panel__back-link">
@@ -519,6 +606,14 @@ const Cart = () => {
         </div>
 
       </div>
+
+      {showAddressModal && (
+        <AddressModal
+          onClose={() => setShowAddressModal(false)}
+          onDeliverHere={proceedToPayment}
+          checkoutError={error}
+        />
+      )}
     </div>
   )
 }

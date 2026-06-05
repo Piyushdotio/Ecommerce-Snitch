@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useProduct } from '../hook/useProduct';
 import { useCart } from '../../Cart/hook/useCart';
+import { useWishlist } from '../../Wishlist/hook/useWishlist';
 import { Link,useNavigate } from 'react-router-dom';
 import './style/Home.scss';
 import Footer from '../components/Footer';
@@ -11,12 +12,22 @@ import { useTheme } from '../../../app/ThemeContext';
 const getCategory = (product) => {
   if (product.category) return product.category;
   const text = `${product.title} ${product.description}`.toLowerCase();
-  if (text.includes("laptop") || text.includes("macbook") || text.includes("computer") || text.includes("pc")) return "Laptops";
-  if (text.includes("blazer") || text.includes("jacket") || text.includes("coat") || text.includes("outerwear")) return "Outerwear";
-  if (text.includes("tee") || text.includes("t-shirt") || text.includes("shirt") || text.includes("top")) return "Essential Tees";
-  if (text.includes("pant") || text.includes("trouser") || text.includes("jeans") || text.includes("denim")) return "Denim";
-  if (text.includes("shoe") || text.includes("sneaker") || text.includes("runner") || text.includes("boot") || text.includes("footwear")) return "Footwear";
-  return "Essential Tees"; // default
+  
+  // 1. Shoes (Check first to avoid pairing suggestions in desc misclassifying)
+  if (text.includes("shoe") || text.includes("sneaker") || text.includes("runner") || text.includes("boot") || text.includes("footwear")) return "Shoes";
+  
+  // 2. Bottoms
+  if (text.includes("jeans") || text.includes("denim")) return "Jeans";
+  if (text.includes("cargo")) return "Cargos";
+  if (text.includes("short")) return "Shorts";
+  if (text.includes("trouser") || text.includes("pant")) return "Trousers";
+  
+  // 3. Tops & Others (Check last as they are the most generic)
+  if (text.includes("polo")) return "Polos";
+  if (text.includes("t-shirt") || text.includes("tee")) return "T-Shirts";
+  if (text.includes("shirt")) return "Shirts";
+  
+  return "Shirts"; // default fallback matching storefront category
 };
 
 const formatPrice = (amount, currency) => {
@@ -33,15 +44,15 @@ const formatPrice = (amount, currency) => {
 
 const categoryCards = [
   { id: "ALL", name: "All", title: "ALL PRODUCTS", img: "/category_all.webp" },
-  { id: "SHIRTS", name: "Essential Tees", title: "SHIRTS", img: "/category_shirts.webp" },
-  { id: "TROUSERS", name: "Denim", title: "TROUSERS", img: "/category_trousers.webp" },
-  { id: "POLOS", name: "Essential Tees", title: "POLOS", img: "/category_polos.webp" },
-  { id: "JEANS", name: "Denim", title: "JEANS", img: "/category_jeans.webp" },
-  { id: "CARGOS", name: "Denim", title: "CARGOS", img: "/category_cargos.webp" },
-  { id: "T-SHIRTS", name: "Essential Tees", title: "T-SHIRTS", img: "/category_tshirts.webp" },
-  { id: "SHORTS", name: "Denim", title: "SHORTS", img: "/category_shorts.webp" },
-  { id: "PLUS SIZE", name: "Essential Tees", title: "PLUS SIZE", img: "/category_plus_size.webp", badge: "3XL TO 6XL" },
-  { id: "SHOES", name: "Footwear", title: "SHOES", img: "/category_shoes.webp", badge: "JUST LAUNCHED" }
+  { id: "SHIRTS", name: "Shirts", title: "SHIRTS", img: "/category_shirts.webp" },
+  { id: "TROUSERS", name: "Trousers", title: "TROUSERS", img: "/category_trousers.webp" },
+  { id: "POLOS", name: "Polos", title: "POLOS", img: "/category_polos.webp" },
+  { id: "JEANS", name: "Jeans", title: "JEANS", img: "/category_jeans.webp" },
+  { id: "CARGOS", name: "Cargos", title: "CARGOS", img: "/category_cargos.webp" },
+  { id: "T-SHIRTS", name: "T-Shirts", title: "T-SHIRTS", img: "/category_tshirts.webp" },
+  { id: "SHORTS", name: "Shorts", title: "SHORTS", img: "/category_shorts.webp" },
+  { id: "PLUS SIZE", name: "Plus Size", title: "PLUS SIZE", img: "/category_plus_size.webp", badge: "3XL TO 6XL" },
+  { id: "SHOES", name: "Shoes", title: "SHOES", img: "/category_shoes.webp", badge: "JUST LAUNCHED" }
 ];
 
 const heroSlides = [
@@ -80,8 +91,10 @@ const Home = () => {
   const products = useSelector((state) => state.product.products);
   const { handleallproducts } = useProduct();
   const { handleGetCart, handleAddItem } = useCart();
+  const { handleGetWishlist, wishlistItems } = useWishlist();
   const cartItems = useSelector((state) => state.cart.items || []);
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const wishlistCount = wishlistItems.length;
   const user = useSelector((state) => state.auth?.user);
   const isSeller = user?.role === "seller";
   const navigate=useNavigate()
@@ -154,6 +167,17 @@ const Home = () => {
     fetchCart();
   }, []);
 
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        await handleGetWishlist();
+      } catch (err) {
+        // Silently fail if user is not authenticated
+      }
+    };
+    fetchWishlist();
+  }, []);
+
   const dbProducts = Array.isArray(products) ? products : [];
 
   // Filter products by category and search query
@@ -201,8 +225,10 @@ const Home = () => {
       alert(`Added ${product.title} to Cart!`);
     } catch (err) {
       console.error(err);
-      alert(err.message || "Please login to add items to cart.");
-      navigate("/login");
+      alert(err.message || "Failed to add item to cart.");
+      if (!user) {
+        navigate("/login");
+      }
     }
   };
 
@@ -256,6 +282,30 @@ const Home = () => {
                   <span className="cart-badge">{cartCount}</span>
                 </button>
               )}
+              {!isSeller && (
+                <button
+                  onClick={() => navigate("/wishlist")}
+                  className="action-icon-link"
+                  title="View Wishlist"
+                  style={{ position: 'relative' }}
+                >
+                  <span className="material-symbols-outlined">favorite</span>
+                  {wishlistCount > 0 && (
+                    <span className="cart-badge" style={{ background: '#ef4444' }}>
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {!isSeller && (
+                <button
+                  onClick={() => navigate("/orders")}
+                  className="action-icon-link"
+                  title="View Orders"
+                >
+                  <span className="material-symbols-outlined">receipt_long</span>
+                </button>
+              )}
               <Link to="/login" className="action-icon-link">
                 <span className="material-symbols-outlined">person</span>
               </Link>
@@ -304,6 +354,18 @@ const Home = () => {
                 <button onClick={() => { setMobileMenuOpen(false); navigate("/cart"); }} className="mobile-action-item">
                   <span className="material-symbols-outlined">shopping_cart</span>
                   <span>Cart ({cartCount})</span>
+                </button>
+              )}
+              {!isSeller && (
+                <button onClick={() => { setMobileMenuOpen(false); navigate("/wishlist"); }} className="mobile-action-item">
+                  <span className="material-symbols-outlined">favorite</span>
+                  <span>Wishlist ({wishlistCount})</span>
+                </button>
+              )}
+              {!isSeller && (
+                <button onClick={() => { setMobileMenuOpen(false); navigate("/orders"); }} className="mobile-action-item">
+                  <span className="material-symbols-outlined">receipt_long</span>
+                  <span>Orders</span>
                 </button>
               )}
               <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="mobile-action-item">
@@ -398,6 +460,10 @@ const Home = () => {
                 const currency = product.price?.currency || "INR";
                 const cat = getCategory(product);
 
+                const totalStock = product.variants && product.variants.length > 0
+                  ? product.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
+                  : (product.stock !== undefined ? product.stock : 10);
+
                 return (
                   <div 
                     onClick={()=>navigate(`product/${product._id}`)}
@@ -408,13 +474,52 @@ const Home = () => {
                         alt={altText}
                         src={imageUrl}
                         loading="lazy"
+                        style={{ filter: totalStock <= 0 ? 'grayscale(0.6)' : 'none' }}
                       />
+                      {totalStock <= 0 ? (
+                        <div className="product-stock-badge out-of-stock-badge" style={{
+                          position: 'absolute',
+                          top: '12px',
+                          left: '12px',
+                          background: 'rgba(15, 23, 42, 0.95)',
+                          color: '#fff',
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          padding: '4px 10px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          zIndex: 2
+                        }}>
+                          Sold Out
+                        </div>
+                      ) : totalStock <= 5 ? (
+                        <div className="product-stock-badge low-stock-badge" style={{
+                          position: 'absolute',
+                          top: '12px',
+                          left: '12px',
+                          background: '#ff6b00',
+                          color: '#fff',
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          padding: '4px 10px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          boxShadow: '0 4px 10px rgba(255, 107, 0, 0.35)',
+                          zIndex: 2
+                        }}>
+                          🔥 Only {totalStock} Left
+                        </div>
+                      ) : null}
                       <div className="product-quick-add-overlay">
                         <button 
                           onClick={(e) => handleQuickAdd(e, product)}
                           className="quick-add-button"
+                          disabled={totalStock <= 0}
                         >
-                          Quick Add +
+                          {totalStock <= 0 ? "Out of Stock" : "Quick Add +"}
                         </button>
                       </div>
                       <span className="product-category-badge">
