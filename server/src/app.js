@@ -8,15 +8,37 @@ import productRouter from "./routes/product.route.js";
 import cookieParser from "cookie-parser";
 import cartRouter from "./routes/cart.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const app = express();
-app.use(cors({
-    origin: config.CLIENT_URL,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL
+].filter(Boolean);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
-}));
+  })
+);
+
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static('./dist'))
 app.use(passport.initialize());
 
 app.use("/api/auth", userRouter);
@@ -44,5 +66,9 @@ app.use((err, req, res, next) => {
         message: err.message || "Internal server error",
     });
 });
+app.get("/{*splat}", (req, res) => {
+  res.sendFile(path.join(__dirname, "../dist", "index.html"));
+});
+
 
 export default app;
