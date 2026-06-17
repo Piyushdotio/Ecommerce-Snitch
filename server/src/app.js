@@ -8,6 +8,7 @@ import productRouter from "./routes/product.route.js";
 import cookieParser from "cookie-parser";
 import cartRouter from "./routes/cart.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
+import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
